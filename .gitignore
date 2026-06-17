@@ -1,0 +1,43 @@
+# Build
+bin/
+obj/
+
+# Visual Studio
+.vs/
+
+# VS Code
+.vscode/
+
+# Rider
+.idea/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Logs
+*.log
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# EF Core generated bundles
+efbundle
+
+# Publish output
+publish/
+
+# Test Results
+TestResults/
+
+# NuGet
+*.nupkg
+
+# Local environment overrides
+appsettings.Local.json
+
+# Docker
+docker-data/
