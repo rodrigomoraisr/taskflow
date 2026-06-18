@@ -1,5 +1,6 @@
 using TaskFlow.Application.Common;
 using TaskFlow.Domain.Entities;
+using TaskFlow.Application.Exceptions;
 
 namespace TaskFlow.Application.Tasks;
 
@@ -46,4 +47,24 @@ public class TaskService : ITaskService
         };
     }
 
+    public async Task<GetTaskResponse> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var task = await _taskRepository.GetByIdAsync(id,cancellationToken);
+
+        if(task is null)
+            throw new TaskNotFoundException(id);
+
+        return new GetTaskResponse
+        {
+            Id = task.Id,
+            Title = task.Title,
+            Description = task.Description,
+            WorkspaceId = task.WorkspaceId,
+            ProjectId = task.ProjectId,
+            Status = task.Status,
+            Priority = task.Priority,
+            CreatedAt = task.CreatedAt,
+            DueDate = task.DueDate
+        };
+    }
 }

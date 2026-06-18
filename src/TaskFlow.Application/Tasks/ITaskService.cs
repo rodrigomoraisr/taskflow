@@ -6,4 +6,8 @@ public interface ITaskService
         CreateTaskRequest request,
         CancellationToken cancellationToken = default
     );
+
+    Task<GetTaskResponse> GetByIdAsync(
+        Guid id, 
+        CancellationToken cancellationToken = default);
 }

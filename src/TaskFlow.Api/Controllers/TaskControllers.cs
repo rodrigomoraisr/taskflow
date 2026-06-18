@@ -22,4 +22,14 @@ public class TasksController : ControllerBase
         var response = await _taskService.CreateAsync(request, cancellationToken);
         return Created($"/tasks/{response.Id}", response);
     }
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<GetTaskResponse>> Get(Guid id, CancellationToken cancellationToken)
+    {
+        var response = await _taskService.GetByIdAsync(
+            id,
+            cancellationToken);
+
+        return Ok(response);
+    }
 }

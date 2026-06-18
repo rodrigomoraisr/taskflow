@@ -22,6 +22,6 @@ public class TaskRepository : ITaskRepository
 
     public async Task<TaskItem?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-       return await _dbContext.Tasks.FindAsync([id], cancellationToken);
+       return await _dbContext.Tasks.FindAsync(id, cancellationToken);
     }
 }
