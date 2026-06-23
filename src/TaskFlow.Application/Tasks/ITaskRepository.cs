@@ -14,4 +14,6 @@ public interface ITaskRepository
         Guid id,
         CancellationToken cancellationToken = default
     );
+
+    Task<List<TaskItem>> GetPagedAsync(int page, int pageSize, CancellationToken cancellationToken = default);
 }

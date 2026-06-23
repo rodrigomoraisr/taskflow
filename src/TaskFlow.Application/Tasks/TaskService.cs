@@ -1,6 +1,8 @@
 using TaskFlow.Application.Common;
 using TaskFlow.Domain.Entities;
 using TaskFlow.Application.Exceptions;
+using System.Net.Cache;
+using System.ComponentModel.DataAnnotations;
 
 namespace TaskFlow.Application.Tasks;
 
@@ -65,6 +67,21 @@ public class TaskService : ITaskService
             Priority = task.Priority,
             CreatedAt = task.CreatedAt,
             DueDate = task.DueDate
+        };
+    }
+
+    public async Task<GetTasksResponse> GetTasksAsync(int page, int pageSize, CancellationToken cancellationToken)
+    {
+        if(page <= 0)
+        {
+            throw new ValidationException("Page must be greater than zero");
+        }
+        
+        var tasks = await _taskRepository.GetPagedAsync(page, pageSize, cancellationToken);
+
+        return new GetTasksResponse
+        {
+            
         };
     }
 }
