@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using TaskFlow.Api.Middleware;
 using TaskFlow.Application.Common;
 using TaskFlow.Application.Tasks;
 using TaskFlow.Infrastructure.Persistence;
@@ -27,6 +28,8 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseHttpsRedirection();
 
