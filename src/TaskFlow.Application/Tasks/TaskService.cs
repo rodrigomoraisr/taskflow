@@ -70,18 +70,31 @@ public class TaskService : ITaskService
         };
     }
 
-    public async Task<GetTasksResponse> GetTasksAsync(int page, int pageSize, CancellationToken cancellationToken)
+    public async Task<GetTasksResponse> GetTasksAsync(
+        GetTasksRequest request, 
+        CancellationToken cancellationToken)
     {
-        if(page <= 0)
-        {
-            throw new ValidationException("Page must be greater than zero");
-        }
-        
-        var tasks = await _taskRepository.GetPagedAsync(page, pageSize, cancellationToken);
+        var tasks = await _taskRepository.GetPagedAsync(request.Page, request.PageSize, cancellationToken);
+
+        var totalCount = await _taskRepository.CountAsync(cancellationToken);
 
         return new GetTasksResponse
         {
-            
+            Items = tasks.Select(task => new GetTaskResponse
+            {
+                Id = task.Id,
+                Title = task.Title,
+                Description = task.Description,
+                WorkspaceId = task.WorkspaceId,
+                ProjectId = task.ProjectId,
+                Status = task.Status,
+                Priority = task.Priority,
+                CreatedAt = task.CreatedAt,
+                DueDate = task.DueDate
+            }).ToList(),
+            Page = request.Page,
+            PageSize = request.PageSize,
+            TotalCount = totalCount
         };
     }
 }

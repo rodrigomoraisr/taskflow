@@ -30,7 +30,7 @@ public class TaskRepository : ITaskRepository
     {
         return await _dbContext.Tasks
             .AsNoTracking()
-            .OrderBy(t => t.CreatedAt)
+            .OrderByDescending(t => t.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);

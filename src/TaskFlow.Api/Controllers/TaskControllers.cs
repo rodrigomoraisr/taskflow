@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Microsoft.AspNetCore.Mvc;
 using TaskFlow.Application.Tasks;
 
@@ -32,4 +33,18 @@ public class TasksController : ControllerBase
 
         return Ok(response);
     }
+
+    [HttpGet]
+    public async Task<ActionResult<GetTasksResponse>> GetTasks(
+        [FromQuery] GetTasksRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _taskService.GetTasksAsync(
+            request,
+            cancellationToken
+        );
+
+        return Ok(response);
+    }
+    
 }

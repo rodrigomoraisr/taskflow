@@ -15,5 +15,13 @@ public interface ITaskRepository
         CancellationToken cancellationToken = default
     );
 
-    Task<List<TaskItem>> GetPagedAsync(int page, int pageSize, CancellationToken cancellationToken = default);
+    Task<List<TaskItem>> GetPagedAsync(
+        int page, 
+        int pageSize, 
+        CancellationToken cancellationToken = default
+    );
+
+    Task<int> CountAsync(
+        CancellationToken cancellationToken = default
+    );
 }

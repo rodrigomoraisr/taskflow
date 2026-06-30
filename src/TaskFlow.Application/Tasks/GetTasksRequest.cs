@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace TaskFlow.Application.Tasks;
 
-public class GetTaskRequest
+public class GetTasksRequest
 {
     [Range(1, int.MaxValue)]
     public int Page { get; set; } = 1;
