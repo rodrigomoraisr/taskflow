@@ -122,7 +122,8 @@ public class TaskItem : BaseEntity
         string title,
         string description,
         TaskPriority priority,
-        DateTime? dueDate
+        DateTime? dueDate,
+        Guid assigneeUserId
     )
     {
         EnsureNotDeleted();
@@ -135,6 +136,7 @@ public class TaskItem : BaseEntity
         Description = description;
         Priority = priority;
         DueDate = dueDate;
+        AssigneeUserId = assigneeUserId;
         UpdatedAt = DateTime.UtcNow;
     }
 }
