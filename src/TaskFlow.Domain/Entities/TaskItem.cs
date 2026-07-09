@@ -2,6 +2,7 @@ namespace TaskFlow.Domain.Entities;
 
 using TaskFlow.Domain.Common;
 using TaskFlow.Domain.Enums;
+using TaskFlow.Domain.Exceptions;
 
 public class TaskItem : BaseEntity
 {
@@ -102,12 +103,11 @@ public class TaskItem : BaseEntity
     public void Delete()
     {
         if(IsDeleted)
-            throw new InvalidOperationException(
-                "Task is already deleted.");
+            throw new TaskAlreadyDeletedException(Id);
 
-            IsDeleted = true;
-            DeletedAt = DateTime.UtcNow;
-            UpdatedAt = DateTime.UtcNow;
+        IsDeleted = true;
+        DeletedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     private void EnsureNotDeleted()

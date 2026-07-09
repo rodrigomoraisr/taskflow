@@ -51,9 +51,9 @@ public class TaskService : ITaskService
 
     public async Task<GetTaskResponse> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var task = await _taskRepository.GetByIdAsync(id,cancellationToken);
+        var task = await _taskRepository.GetByIdAsync(id, cancellationToken);
 
-        if(task is null)
+        if (task is null)
             throw new TaskNotFoundException(id);
 
         return new GetTaskResponse
@@ -66,12 +66,13 @@ public class TaskService : ITaskService
             Status = task.Status,
             Priority = task.Priority,
             CreatedAt = task.CreatedAt,
-            DueDate = task.DueDate
+            DueDate = task.DueDate,
+            UpdatedAt = task.UpdatedAt
         };
     }
 
     public async Task<GetTasksResponse> GetTasksAsync(
-        GetTasksRequest request, 
+        GetTasksRequest request,
         CancellationToken cancellationToken)
     {
         var tasks = await _taskRepository.GetPagedAsync(request.Page, request.PageSize, cancellationToken);
@@ -90,11 +91,52 @@ public class TaskService : ITaskService
                 Status = task.Status,
                 Priority = task.Priority,
                 CreatedAt = task.CreatedAt,
-                DueDate = task.DueDate
+                DueDate = task.DueDate,
+                UpdatedAt = task.UpdatedAt
             }).ToList(),
             Page = request.Page,
             PageSize = request.PageSize,
             TotalCount = totalCount
         };
+    }
+
+    public async Task UpdateAsync(
+        Guid id,
+        UpdateTaskRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var task = await _taskRepository.GetByIdAsync(
+                        id,
+                        cancellationToken);
+
+        if (task is null)
+            throw new TaskNotFoundException(id);
+
+        task.UpdateDetails(
+            request.Title,
+            request.Description,
+            request.Priority,
+            request.DueDate,
+            request.AssigneeUserId);
+
+        await _unitOfWork.SaveChangesAsync(
+            cancellationToken);
+    }
+
+    public async Task DeleteAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var task = await _taskRepository.GetByIdAsync(
+            id,
+            cancellationToken);
+
+        if (task is null)
+            throw new TaskNotFoundException(id);
+
+        task.Delete();
+
+        await _unitOfWork.SaveChangesAsync(
+            cancellationToken);
     }
 }

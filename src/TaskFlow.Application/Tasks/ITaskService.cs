@@ -15,4 +15,13 @@ public interface ITaskService
         GetTasksRequest request,
         CancellationToken cancellationToken = default
     );
+
+    Task UpdateAsync(
+    Guid id,
+    UpdateTaskRequest request,
+    CancellationToken cancellationToken = default);
+
+    Task DeleteAsync(
+    Guid id,
+    CancellationToken cancellationToken = default);
 }

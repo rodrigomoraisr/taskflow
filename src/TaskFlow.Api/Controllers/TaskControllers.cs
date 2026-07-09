@@ -46,5 +46,31 @@ public class TasksController : ControllerBase
 
         return Ok(response);
     }
-    
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(
+        Guid id,
+        UpdateTaskRequest request,
+        CancellationToken cancellationToken)
+    {
+        await _taskService.UpdateAsync(
+            id,
+            request,
+            cancellationToken);
+
+        return NoContent();
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        await _taskService.DeleteAsync(
+            id,
+            cancellationToken);
+
+        return NoContent();
+    }
+
 }
