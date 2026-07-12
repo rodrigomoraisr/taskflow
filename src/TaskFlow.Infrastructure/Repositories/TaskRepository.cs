@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using TaskFlow.Application.Tasks;
+using TaskFlow.Application.Common.Interfaces;
 using TaskFlow.Domain.Entities;
 using TaskFlow.Infrastructure.Persistence;
 

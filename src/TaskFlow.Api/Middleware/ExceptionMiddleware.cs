@@ -1,3 +1,4 @@
+using TaskFlow.Application.Common.Exceptions;
 using TaskFlow.Application.Exceptions;
 
 namespace TaskFlow.Api.Middleware;
@@ -29,6 +30,26 @@ public class ExceptionMiddleware
                     error = ex.Message
                 });
         }
+        catch(UserAlreadyExistsException ex)
+        {
+            context.Response.StatusCode = 409;
+
+            await context.Response.WriteAsJsonAsync(
+                new
+                {
+                    error = ex.Message
+                });
+        }
+         catch(InvalidCredentialsException ex)
+        {
+            context.Response.StatusCode = 401;
+
+            await context.Response.WriteAsJsonAsync(
+                new
+                {
+                    error = ex.Message
+                });
+        }
         catch (Exception)
         {
             context.Response.StatusCode = 500;
@@ -41,3 +62,22 @@ public class ExceptionMiddleware
         }
     }
 }
+
+
+// catch (Exception ex)
+// {
+//     var (statusCode, message) = ex switch
+//     {
+//         TaskNotFoundException => (404, ex.Message),
+//         UserAlreadyExistsException => (409, ex.Message),
+//         InvalidCredentialsException => (401, ex.Message),
+//         _ => (500, "An unexpected error occurred.")
+//     };
+
+//     context.Response.StatusCode = statusCode;
+
+//     await context.Response.WriteAsJsonAsync(new
+//     {
+//         error = message
+//     });
+// }

@@ -1,6 +1,6 @@
 using TaskFlow.Domain.Entities;
 
-namespace TaskFlow.Application.Tasks;
+namespace TaskFlow.Application.Common.Interfaces;
 
 public interface ITaskRepository
 {

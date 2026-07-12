@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TaskFlow.Application.Tasks;
 
@@ -17,6 +18,7 @@ public class TasksController : ControllerBase
         _taskService = taskService;
     }
 
+    [Authorize]
     [HttpPost]
     public async Task<ActionResult<CreateTaskResponse>> Create(CreateTaskRequest request, CancellationToken cancellationToken)
     {
@@ -24,6 +26,7 @@ public class TasksController : ControllerBase
         return Created($"/tasks/{response.Id}", response);
     }
 
+    [Authorize]
     [HttpGet("{id}")]
     public async Task<ActionResult<GetTaskResponse>> Get(Guid id, CancellationToken cancellationToken)
     {
@@ -34,6 +37,7 @@ public class TasksController : ControllerBase
         return Ok(response);
     }
 
+    [Authorize]
     [HttpGet]
     public async Task<ActionResult<GetTasksResponse>> GetTasks(
         [FromQuery] GetTasksRequest request,
@@ -47,6 +51,7 @@ public class TasksController : ControllerBase
         return Ok(response);
     }
 
+    [Authorize]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(
         Guid id,
@@ -61,6 +66,7 @@ public class TasksController : ControllerBase
         return NoContent();
     }
 
+    [Authorize]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(
         Guid id,
