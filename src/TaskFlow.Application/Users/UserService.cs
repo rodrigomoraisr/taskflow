@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Identity;
-using Microsoft.VisualBasic;
 using TaskFlow.Application.Common;
 using TaskFlow.Application.Common.Exceptions;
 using TaskFlow.Application.Common.Interfaces;
@@ -14,22 +12,26 @@ public class UserService : IUserService
     private readonly IPasswordHasher _passwordHasher;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
+    private readonly IWorkspaceUserRepository _workspaceUserRepository;
 
     public UserService(
         IUserRepository userRepository,
         IJwtTokenGenerator jwtTokenGenerator,
         IPasswordHasher passwordHasher,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IWorkspaceUserRepository workspaceUserRepository)
     {
         _userRepository = userRepository;
         _jwtTokenGenerator = jwtTokenGenerator;
         _passwordHasher = passwordHasher;
         _unitOfWork = unitOfWork;
+        _workspaceUserRepository = workspaceUserRepository;
+
     }
 
     public async Task<LoginResponse> LoginAsync(
-     LoginRequest request,
-     CancellationToken cancellationToken)
+    LoginRequest request,
+    CancellationToken cancellationToken)
     {
         string normalizedEmail = request.Email
             .Trim()
@@ -39,7 +41,7 @@ public class UserService : IUserService
             normalizedEmail,
             cancellationToken);
 
-        if (user is null)
+        if (user is null || !user.IsActive)
             throw new InvalidCredentialsException();
 
         var passwordMatches = _passwordHasher.Verify(
@@ -49,13 +51,28 @@ public class UserService : IUserService
         if (!passwordMatches)
             throw new InvalidCredentialsException();
 
-        var token = _jwtTokenGenerator.GenerateToken(user);
+        var membership =
+            await _workspaceUserRepository
+                .GetFirstMembershipAsync(
+                    user.Id,
+                    cancellationToken);
+
+        if (membership is null)
+            throw new UserWithoutWorkspaceException();
+
+        var token =
+            _jwtTokenGenerator.GenerateToken(
+                user,
+                membership.WorkspaceId,
+                membership.Role);
 
         return new LoginResponse
         {
             Token = token,
             UserId = user.Id,
-            Email = user.Email
+            Email = user.Email,
+            WorkspaceId = membership.WorkspaceId,
+            Role = membership.Role.ToString()
         };
     }
 

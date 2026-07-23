@@ -20,64 +20,36 @@ public class ExceptionMiddleware
         {
             await _next(context);
         }
-        catch (TaskNotFoundException ex)
+        catch (Exception ex)
         {
-            context.Response.StatusCode = 404;
+            var (statusCode, message) = ex switch
+            {
+                TaskNotFoundException =>
+                    (StatusCodes.Status404NotFound, ex.Message),
+
+                UserAlreadyExistsException =>
+                    (StatusCodes.Status409Conflict, ex.Message),
+
+                InvalidCredentialsException =>
+                    (StatusCodes.Status401Unauthorized, ex.Message),
+
+                UserWithoutWorkspaceException =>
+                    (StatusCodes.Status403Forbidden, ex.Message),
+
+                _ =>
+                    (
+                        StatusCodes.Status500InternalServerError,
+                        "An unexpected error occurred."
+                    )
+            };
+
+            context.Response.StatusCode = statusCode;
 
             await context.Response.WriteAsJsonAsync(
                 new
                 {
-                    error = ex.Message
-                });
-        }
-        catch(UserAlreadyExistsException ex)
-        {
-            context.Response.StatusCode = 409;
-
-            await context.Response.WriteAsJsonAsync(
-                new
-                {
-                    error = ex.Message
-                });
-        }
-         catch(InvalidCredentialsException ex)
-        {
-            context.Response.StatusCode = 401;
-
-            await context.Response.WriteAsJsonAsync(
-                new
-                {
-                    error = ex.Message
-                });
-        }
-        catch (Exception)
-        {
-            context.Response.StatusCode = 500;
-
-            await context.Response.WriteAsJsonAsync(
-                new
-                {
-                    error = "An unexpected error occurred."
+                    error = message
                 });
         }
     }
 }
-
-
-// catch (Exception ex)
-// {
-//     var (statusCode, message) = ex switch
-//     {
-//         TaskNotFoundException => (404, ex.Message),
-//         UserAlreadyExistsException => (409, ex.Message),
-//         InvalidCredentialsException => (401, ex.Message),
-//         _ => (500, "An unexpected error occurred.")
-//     };
-
-//     context.Response.StatusCode = statusCode;
-
-//     await context.Response.WriteAsJsonAsync(new
-//     {
-//         error = message
-//     });
-// }
