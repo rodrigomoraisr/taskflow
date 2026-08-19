@@ -35,6 +35,9 @@ public class ExceptionMiddleware
 
                 UserWithoutWorkspaceException =>
                     (StatusCodes.Status403Forbidden, ex.Message),
+                    
+                InvalidUserIdentityException =>
+                    (StatusCodes.Status401Unauthorized, ex.Message),
 
                 _ =>
                     (
