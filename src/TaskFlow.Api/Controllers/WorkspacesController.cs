@@ -34,4 +34,29 @@ public class WorkspacesController : ControllerBase
             StatusCodes.Status201Created,
             response);
     }
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<GetWorkspaceResponse>> GetById(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var response =
+            await _workspaceService.GetByIdAsync(
+                id,
+                cancellationToken);
+
+        return Ok(response);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(
+    Guid id,
+    CancellationToken cancellationToken)
+    {
+        await _workspaceService.DeleteAsync(
+            id,
+            cancellationToken);
+
+        return NoContent();
+    }
 }

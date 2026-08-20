@@ -2,7 +2,9 @@ using TaskFlow.Application.Common;
 using TaskFlow.Application.Common.Exceptions;
 using TaskFlow.Application.Common.Interfaces;
 using TaskFlow.Application.Common.Security;
+using TaskFlow.Application.Workspaces;
 using TaskFlow.Domain.Entities;
+using TaskFlow.Domain.Enums;
 
 namespace TaskFlow.Application.Users;
 
@@ -13,20 +15,22 @@ public class UserService : IUserService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
     private readonly IWorkspaceUserRepository _workspaceUserRepository;
+    private readonly IWorkspaceRepository _workspaceRepository;
 
     public UserService(
         IUserRepository userRepository,
         IJwtTokenGenerator jwtTokenGenerator,
         IPasswordHasher passwordHasher,
         IUnitOfWork unitOfWork,
-        IWorkspaceUserRepository workspaceUserRepository)
+        IWorkspaceUserRepository workspaceUserRepository,
+        IWorkspaceRepository workspaceRepository)
     {
         _userRepository = userRepository;
         _jwtTokenGenerator = jwtTokenGenerator;
         _passwordHasher = passwordHasher;
         _unitOfWork = unitOfWork;
         _workspaceUserRepository = workspaceUserRepository;
-
+        _workspaceRepository = workspaceRepository;
     }
 
     public async Task<LoginResponse> LoginAsync(
@@ -101,13 +105,30 @@ public class UserService : IUserService
             user,
             cancellationToken);
 
+        var workspace = new Workspace("My Workspace");
+
+        await _workspaceRepository.AddAsync(
+            workspace,
+            cancellationToken);
+
+        var membership = new WorkspaceUser(
+            user.Id,
+            workspace.Id,
+            WorkspaceRole.Owner);
+
+        await _workspaceUserRepository.AddAsync(
+            membership,
+            cancellationToken);
+
         await _unitOfWork.SaveChangesAsync(
             cancellationToken);
 
         return new RegisterResponse
         {
             Id = user.Id,
-            Email = user.Email
+            Email = user.Email,
+            WorkspaceId = workspace.Id,
+            WorkspaceName = workspace.Name
         };
     }
 }

@@ -10,14 +10,16 @@ namespace TaskFlow.Application.Tasks;
 public class TaskService : ITaskService
 {
     private readonly ITaskRepository _taskRepository;
+    private readonly ICurrentWorkspace _currentWorkspace;
     private readonly IUnitOfWork _unitOfWork;
 
     public TaskService(
         ITaskRepository taskRepository,
-        IUnitOfWork unitOfWork
-    )
+        ICurrentWorkspace currentWorkspace,
+        IUnitOfWork unitOfWork)
     {
         _taskRepository = taskRepository;
+        _currentWorkspace = currentWorkspace;
         _unitOfWork = unitOfWork;
     }
 
@@ -29,7 +31,7 @@ public class TaskService : ITaskService
         var task = new TaskItem(
             request.Title,
             request.Description,
-            request.WorkspaceId,
+             _currentWorkspace.WorkspaceId,
             request.ProjectId,
             request.Priority,
             request.DueDate
@@ -50,9 +52,14 @@ public class TaskService : ITaskService
         };
     }
 
-    public async Task<GetTaskResponse> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<GetTaskResponse> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
     {
-        var task = await _taskRepository.GetByIdAsync(id, cancellationToken);
+        var task = await _taskRepository.GetByIdAsync(
+            id,
+            _currentWorkspace.WorkspaceId,
+            cancellationToken);
 
         if (task is null)
             throw new TaskNotFoundException(id);
@@ -76,10 +83,18 @@ public class TaskService : ITaskService
         GetTasksRequest request,
         CancellationToken cancellationToken)
     {
-        var tasks = await _taskRepository.GetPagedAsync(request.Page, request.PageSize, cancellationToken);
+        var workspaceId = _currentWorkspace.WorkspaceId;
 
-        var totalCount = await _taskRepository.CountAsync(cancellationToken);
+        var tasks = await _taskRepository.GetPagedAsync(
+            workspaceId,
+            request.Page,
+            request.PageSize,
+            cancellationToken);
 
+        var totalCount = await _taskRepository.CountAsync(
+            workspaceId,
+            cancellationToken);
+            
         return new GetTasksResponse
         {
             Items = tasks.Select(task => new GetTaskResponse
@@ -108,6 +123,7 @@ public class TaskService : ITaskService
     {
         var task = await _taskRepository.GetByIdAsync(
                         id,
+                        _currentWorkspace.WorkspaceId,
                         cancellationToken);
 
         if (task is null)
@@ -130,6 +146,7 @@ public class TaskService : ITaskService
     {
         var task = await _taskRepository.GetByIdAsync(
             id,
+             _currentWorkspace.WorkspaceId,
             cancellationToken);
 
         if (task is null)

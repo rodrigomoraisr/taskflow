@@ -21,31 +21,34 @@ public class TaskRepository : ITaskRepository
         await _dbContext.Tasks.AddAsync(task, cancellationToken);
     }
 
-    public async Task<TaskItem?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<TaskItem?> GetByIdAsync(Guid id, Guid workspaceId, CancellationToken cancellationToken = default)
     {
         return await _dbContext.Tasks
             .FirstOrDefaultAsync(
                 t => t.Id == id &&
+                t.WorkspaceId == workspaceId &&
                 !t.IsDeleted,
          cancellationToken);
     }
 
-    public async Task<List<TaskItem>> GetPagedAsync(int page, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<List<TaskItem>> GetPagedAsync( Guid workspaceId, int page, int pageSize, CancellationToken cancellationToken = default)
     {
         return await _dbContext.Tasks
             .AsNoTracking()
-            .Where(t => !t.IsDeleted)
+            .Where(t => 
+                t.WorkspaceId == workspaceId && 
+                !t.IsDeleted)
             .OrderByDescending(t => t.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<int> CountAsync(CancellationToken cancellationToken)
+    public async Task<int> CountAsync(Guid workspaceId, CancellationToken cancellationToken)
     {
         return await _dbContext.Tasks
             .CountAsync(
-            t => !t.IsDeleted,
+            t =>  t.WorkspaceId == workspaceId && !t.IsDeleted,
             cancellationToken);
     }
 }

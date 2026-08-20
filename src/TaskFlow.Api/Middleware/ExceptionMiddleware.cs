@@ -48,6 +48,9 @@ public class ExceptionMiddleware
                 UnauthorizedWorkspaceAccessException =>
                     (StatusCodes.Status403Forbidden, ex.Message),
                     
+                WorkspaceNotFoundException =>
+                    (StatusCodes.Status404NotFound, ex.Message),
+
                 _ =>
                     (
                         StatusCodes.Status500InternalServerError,

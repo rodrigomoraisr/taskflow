@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TaskFlow.Application.Users;
 
@@ -16,7 +15,6 @@ public class AuthController : ControllerBase
         _userService = userService;
     }
 
-    [Authorize]
     [HttpPost("register")]
     public async Task<ActionResult<RegisterResponse>> Register(
         RegisterRequest request,

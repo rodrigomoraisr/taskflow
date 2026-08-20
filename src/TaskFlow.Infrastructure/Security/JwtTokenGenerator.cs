@@ -37,15 +37,6 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(JwtRegisteredClaimNames.Email, user.Email),
-
-            new Claim(
-                JwtRegisteredClaimNames.Sub,
-                user.Id.ToString()),
-
-            new Claim(
-                JwtRegisteredClaimNames.Email,
-                user.Email),
-
             new Claim(
                 "workspaceId",
                 workspaceId.ToString()),

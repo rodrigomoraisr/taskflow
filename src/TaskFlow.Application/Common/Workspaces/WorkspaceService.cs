@@ -1,4 +1,5 @@
 using TaskFlow.Application.Common;
+using TaskFlow.Application.Common.Exceptions;
 using TaskFlow.Application.Common.Interfaces;
 using TaskFlow.Application.Workspaces;
 using TaskFlow.Domain.Entities;
@@ -53,5 +54,50 @@ public class WorkspaceService : IWorkspaceService
             Name = workspace.Name,
             OwnerId = userId
         };
+    }
+
+    public async Task<GetWorkspaceResponse> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        _workspaceAuthorizationService
+            .EnsureCanViewWorkspace(id);
+
+        var workspace =
+            await _workspaceRepository.GetByIdAsync(
+                id,
+                cancellationToken);
+
+        if (workspace is null)
+            throw new WorkspaceNotFoundException(id);
+
+        return new GetWorkspaceResponse
+        {
+            Id = workspace.Id,
+            Name = workspace.Name,
+            CreatedAt = workspace.CreatedAt,
+            UpdatedAt = workspace.UpdatedAt
+        };
+    }
+
+    public async Task DeleteAsync(
+    Guid id,
+    CancellationToken cancellationToken = default)
+    {
+        _workspaceAuthorizationService
+            .EnsureCanDeleteWorkspace(id);
+
+        var workspace =
+            await _workspaceRepository.GetByIdAsync(
+                id,
+                cancellationToken);
+
+        if (workspace is null)
+            throw new WorkspaceNotFoundException(id);
+
+        workspace.Delete();
+
+        await _unitOfWork.SaveChangesAsync(
+            cancellationToken);
     }
 }
