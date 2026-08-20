@@ -14,6 +14,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using TaskFlow.Application.Workspaces;
 using TaskFlow.Api.Security;
+using TaskFlow.Application.Common.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +25,8 @@ builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+builder.Services.AddScoped<ICurrentWorkspace, CurrentWorkspace>();
+builder.Services.AddScoped<IWorkspaceAuthorizationService, WorkspaceAuthorizationService>();
 
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<ITaskService, TaskService>();

@@ -39,6 +39,15 @@ public class ExceptionMiddleware
                 InvalidUserIdentityException =>
                     (StatusCodes.Status401Unauthorized, ex.Message),
 
+                InvalidWorkspaceIdentityException =>
+                    (StatusCodes.Status401Unauthorized, ex.Message),
+
+                InsufficientWorkspaceRoleException =>
+                    (StatusCodes.Status403Forbidden, ex.Message),
+
+                UnauthorizedWorkspaceAccessException =>
+                    (StatusCodes.Status403Forbidden, ex.Message),
+                    
                 _ =>
                     (
                         StatusCodes.Status500InternalServerError,

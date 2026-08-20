@@ -8,15 +8,18 @@ public class WorkspaceService : IWorkspaceService
 {
     private readonly IWorkspaceRepository _workspaceRepository;
     private readonly IWorkspaceUserRepository _workspaceUserRepository;
+    private readonly IWorkspaceAuthorizationService _workspaceAuthorizationService;
     private readonly IUnitOfWork _unitOfWork;
 
     public WorkspaceService(
         IWorkspaceRepository workspaceRepository,
         IWorkspaceUserRepository workspaceUserRepository,
+        IWorkspaceAuthorizationService workspaceAuthorizationService,
         IUnitOfWork unitOfWork)
     {
         _workspaceRepository = workspaceRepository;
         _workspaceUserRepository = workspaceUserRepository;
+        _workspaceAuthorizationService = workspaceAuthorizationService;
         _unitOfWork = unitOfWork;
     }
 
