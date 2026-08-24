@@ -24,14 +24,35 @@ public class WorkspaceUserRepository : IWorkspaceUserRepository
             cancellationToken);
     }
 
-    public async Task<WorkspaceUser?> GetFirstMembershipAsync(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<WorkspaceUser?> GetActiveMembershipAsync(
+        Guid userId,
+        Guid workspaceId,
+        CancellationToken cancellationToken = default)
     {
         return await _dbContext.WorkspaceUsers
-        .AsNoTracking()
-        .Where(wu =>
-            wu.UserId == userId &&
-            !wu.IsDeleted)
-        .OrderBy(wu => wu.CreatedAt)
-        .FirstOrDefaultAsync(cancellationToken);
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                wu => wu.UserId == userId &&
+                      wu.WorkspaceId == workspaceId &&
+                      !wu.IsDeleted &&
+                      _dbContext.Workspaces.Any(
+                          workspace => workspace.Id == wu.WorkspaceId &&
+                                       !workspace.IsDeleted),
+                cancellationToken);
+    }
+
+    public async Task<List<WorkspaceUser>> GetActiveMembershipsAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.WorkspaceUsers
+            .AsNoTracking()
+            .Where(wu => wu.UserId == userId &&
+                         !wu.IsDeleted &&
+                         _dbContext.Workspaces.Any(
+                             workspace => workspace.Id == wu.WorkspaceId &&
+                                          !workspace.IsDeleted))
+            .OrderBy(wu => wu.CreatedAt)
+            .ToListAsync(cancellationToken);
     }
 }

@@ -55,28 +55,13 @@ public class UserService : IUserService
         if (!passwordMatches)
             throw new InvalidCredentialsException();
 
-        var membership =
-            await _workspaceUserRepository
-                .GetFirstMembershipAsync(
-                    user.Id,
-                    cancellationToken);
-
-        if (membership is null)
-            throw new UserWithoutWorkspaceException();
-
-        var token =
-            _jwtTokenGenerator.GenerateToken(
-                user,
-                membership.WorkspaceId,
-                membership.Role);
+        var token = _jwtTokenGenerator.GenerateToken(user);
 
         return new LoginResponse
         {
             Token = token,
             UserId = user.Id,
-            Email = user.Email,
-            WorkspaceId = membership.WorkspaceId,
-            Role = membership.Role.ToString()
+            Email = user.Email
         };
     }
 

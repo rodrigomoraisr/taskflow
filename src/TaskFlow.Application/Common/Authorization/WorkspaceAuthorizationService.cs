@@ -1,5 +1,6 @@
 using TaskFlow.Application.Common.Exceptions;
 using TaskFlow.Application.Common.Interfaces;
+using TaskFlow.Domain.Entities;
 using TaskFlow.Domain.Enums;
 
 namespace TaskFlow.Application.Common.Authorization;
@@ -7,49 +8,67 @@ namespace TaskFlow.Application.Common.Authorization;
 public class WorkspaceAuthorizationService
     : IWorkspaceAuthorizationService
 {
-    private readonly ICurrentWorkspace _currentWorkspace;
+    private readonly ICurrentUser _currentUser;
+    private readonly IWorkspaceUserRepository _workspaceUserRepository;
 
     public WorkspaceAuthorizationService(
-        ICurrentWorkspace currentWorkspace)
+        ICurrentUser currentUser,
+        IWorkspaceUserRepository workspaceUserRepository)
     {
-        _currentWorkspace = currentWorkspace;
+        _currentUser = currentUser;
+        _workspaceUserRepository = workspaceUserRepository;
     }
 
-    public void EnsureCanViewWorkspace(
-        Guid workspaceId)
+    public async Task EnsureCanViewWorkspaceAsync(
+        Guid workspaceId,
+        CancellationToken cancellationToken = default)
     {
-        EnsureSameWorkspace(workspaceId);
+        await GetActiveMembershipAsync(workspaceId, cancellationToken);
     }
 
-    public void EnsureCanManageMembers(
-        Guid workspaceId)
+    public async Task EnsureCanManageMembersAsync(
+        Guid workspaceId,
+        CancellationToken cancellationToken = default)
     {
-        EnsureSameWorkspace(workspaceId);
+        var membership = await GetActiveMembershipAsync(
+            workspaceId,
+            cancellationToken);
 
-        if (_currentWorkspace.Role != WorkspaceRole.Owner &&
-            _currentWorkspace.Role != WorkspaceRole.Admin)
+        if (membership.Role != WorkspaceRole.Owner &&
+            membership.Role != WorkspaceRole.Admin)
         {
             throw new InsufficientWorkspaceRoleException();
         }
     }
 
-    public void EnsureCanDeleteWorkspace(
-        Guid workspaceId)
+    public async Task EnsureCanDeleteWorkspaceAsync(
+        Guid workspaceId,
+        CancellationToken cancellationToken = default)
     {
-        EnsureSameWorkspace(workspaceId);
+        var membership = await GetActiveMembershipAsync(
+            workspaceId,
+            cancellationToken);
 
-        if (_currentWorkspace.Role != WorkspaceRole.Owner)
+        if (membership.Role != WorkspaceRole.Owner)
         {
             throw new InsufficientWorkspaceRoleException();
         }
     }
 
-    private void EnsureSameWorkspace(
-        Guid workspaceId)
+    private async Task<WorkspaceUser> GetActiveMembershipAsync(
+        Guid workspaceId,
+        CancellationToken cancellationToken)
     {
-        if (_currentWorkspace.WorkspaceId != workspaceId)
+        var membership = await _workspaceUserRepository.GetActiveMembershipAsync(
+            _currentUser.UserId,
+            workspaceId,
+            cancellationToken);
+
+        if (membership is null)
         {
             throw new UnauthorizedWorkspaceAccessException();
         }
+
+        return membership;
     }
 }

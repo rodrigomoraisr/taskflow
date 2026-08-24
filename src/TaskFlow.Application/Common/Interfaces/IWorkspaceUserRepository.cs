@@ -8,7 +8,12 @@ public interface IWorkspaceUserRepository
         WorkspaceUser workspaceUser,
         CancellationToken cancellationToken = default);
         
-    Task<WorkspaceUser?> GetFirstMembershipAsync(
-    Guid userId,
-    CancellationToken cancellationToken = default);
+    Task<WorkspaceUser?> GetActiveMembershipAsync(
+        Guid userId,
+        Guid workspaceId,
+        CancellationToken cancellationToken = default);
+
+    Task<List<WorkspaceUser>> GetActiveMembershipsAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default);
 }

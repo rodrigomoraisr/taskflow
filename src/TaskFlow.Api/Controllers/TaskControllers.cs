@@ -6,7 +6,8 @@ using TaskFlow.Application.Tasks;
 namespace TaskFlow.Api.Controllers;
 
 [ApiController]
-[Route("tasks")]
+[Route("api/workspaces/{workspaceId:guid}/tasks")]
+[Authorize]
 public class TasksController : ControllerBase
 {
     private readonly ITaskService _taskService;
@@ -18,32 +19,44 @@ public class TasksController : ControllerBase
         _taskService = taskService;
     }
 
-    [Authorize]
     [HttpPost]
-    public async Task<ActionResult<CreateTaskResponse>> Create(CreateTaskRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<CreateTaskResponse>> Create(
+        Guid workspaceId,
+        CreateTaskRequest request,
+        CancellationToken cancellationToken)
     {
-        var response = await _taskService.CreateAsync(request, cancellationToken);
-        return Created($"/tasks/{response.Id}", response);
+        var response = await _taskService.CreateAsync(
+            workspaceId,
+            request,
+            cancellationToken);
+
+        return Created(
+            $"/api/workspaces/{workspaceId}/tasks/{response.Id}",
+            response);
     }
 
-    [Authorize]
-    [HttpGet("{id}")]
-    public async Task<ActionResult<GetTaskResponse>> Get(Guid id, CancellationToken cancellationToken)
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<GetTaskResponse>> Get(
+        Guid workspaceId,
+        Guid id,
+        CancellationToken cancellationToken)
     {
         var response = await _taskService.GetByIdAsync(
+            workspaceId,
             id,
             cancellationToken);
 
         return Ok(response);
     }
 
-    [Authorize]
     [HttpGet]
     public async Task<ActionResult<GetTasksResponse>> GetTasks(
+        Guid workspaceId,
         [FromQuery] GetTasksRequest request,
         CancellationToken cancellationToken)
     {
         var response = await _taskService.GetTasksAsync(
+            workspaceId,
             request,
             cancellationToken
         );
@@ -51,14 +64,15 @@ public class TasksController : ControllerBase
         return Ok(response);
     }
 
-    [Authorize]
-    [HttpPut("{id}")]
+    [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(
+        Guid workspaceId,
         Guid id,
         UpdateTaskRequest request,
         CancellationToken cancellationToken)
     {
         await _taskService.UpdateAsync(
+            workspaceId,
             id,
             request,
             cancellationToken);
@@ -66,13 +80,14 @@ public class TasksController : ControllerBase
         return NoContent();
     }
 
-    [Authorize]
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(
+        Guid workspaceId,
         Guid id,
         CancellationToken cancellationToken)
     {
         await _taskService.DeleteAsync(
+            workspaceId,
             id,
             cancellationToken);
 

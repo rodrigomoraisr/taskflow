@@ -5,7 +5,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using TaskFlow.Application.Common.Security;
 using TaskFlow.Domain.Entities;
-using TaskFlow.Domain.Enums;
 
 namespace TaskFlow.Infrastructure.Security;
 
@@ -19,10 +18,7 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         _configuration = configuration;
     }
 
-    public string GenerateToken(
-        User user,
-        Guid workspaceId,
-        WorkspaceRole role)
+    public string GenerateToken(User user)
     {
         var key = _configuration["Jwt:Key"]!;
 
@@ -36,14 +32,7 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new(JwtRegisteredClaimNames.Email, user.Email),
-            new Claim(
-                "workspaceId",
-                workspaceId.ToString()),
-
-            new Claim(
-                ClaimTypes.Role,
-                role.ToString())
+            new(JwtRegisteredClaimNames.Email, user.Email)
         };
 
         var token = new JwtSecurityToken(

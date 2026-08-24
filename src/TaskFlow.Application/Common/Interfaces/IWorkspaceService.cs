@@ -6,6 +6,10 @@ public interface IWorkspaceService
         Guid userId,
         CreateWorkspaceRequest request,
         CancellationToken cancellationToken = default);
+
+    Task<List<ListWorkspaceResponse>> GetForUserAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default);
     
     Task<GetWorkspaceResponse> GetByIdAsync(
         Guid id,

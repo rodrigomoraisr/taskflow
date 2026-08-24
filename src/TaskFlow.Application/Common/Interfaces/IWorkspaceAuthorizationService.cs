@@ -2,12 +2,15 @@ namespace TaskFlow.Application.Common.Interfaces;
 
 public interface IWorkspaceAuthorizationService
 {
-    void EnsureCanViewWorkspace(
-        Guid workspaceId);
+    Task EnsureCanViewWorkspaceAsync(
+        Guid workspaceId,
+        CancellationToken cancellationToken = default);
 
-    void EnsureCanManageMembers(
-        Guid workspaceId);
+    Task EnsureCanManageMembersAsync(
+        Guid workspaceId,
+        CancellationToken cancellationToken = default);
 
-    void EnsureCanDeleteWorkspace(
-        Guid workspaceId);
+    Task EnsureCanDeleteWorkspaceAsync(
+        Guid workspaceId,
+        CancellationToken cancellationToken = default);
 }

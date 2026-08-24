@@ -34,4 +34,16 @@ public class WorkspaceRepository : IWorkspaceRepository
                      !w.IsDeleted,
                 cancellationToken);
     }
+
+    public async Task<List<Workspace>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Workspaces
+            .AsNoTracking()
+            .Where(workspace => ids.Contains(workspace.Id) &&
+                                !workspace.IsDeleted)
+            .OrderBy(workspace => workspace.Name)
+            .ToListAsync(cancellationToken);
+    }
 }

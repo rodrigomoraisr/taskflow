@@ -35,6 +35,17 @@ public class WorkspacesController : ControllerBase
             response);
     }
 
+    [HttpGet]
+    public async Task<ActionResult<List<ListWorkspaceResponse>>> GetForUser(
+        CancellationToken cancellationToken)
+    {
+        var response = await _workspaceService.GetForUserAsync(
+            _currentUser.UserId,
+            cancellationToken);
+
+        return Ok(response);
+    }
+
     [HttpGet("{id}")]
     public async Task<ActionResult<GetWorkspaceResponse>> GetById(
         Guid id,

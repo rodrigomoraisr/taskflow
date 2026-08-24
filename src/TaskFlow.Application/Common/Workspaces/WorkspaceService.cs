@@ -60,8 +60,8 @@ public class WorkspaceService : IWorkspaceService
         Guid id,
         CancellationToken cancellationToken = default)
     {
-        _workspaceAuthorizationService
-            .EnsureCanViewWorkspace(id);
+        await _workspaceAuthorizationService
+            .EnsureCanViewWorkspaceAsync(id, cancellationToken);
 
         var workspace =
             await _workspaceRepository.GetByIdAsync(
@@ -80,12 +80,36 @@ public class WorkspaceService : IWorkspaceService
         };
     }
 
+    public async Task<List<ListWorkspaceResponse>> GetForUserAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        var memberships = await _workspaceUserRepository
+            .GetActiveMembershipsAsync(userId, cancellationToken);
+
+        var rolesByWorkspace = memberships.ToDictionary(
+            membership => membership.WorkspaceId,
+            membership => membership.Role);
+
+        var workspaces = await _workspaceRepository.GetByIdsAsync(
+            rolesByWorkspace.Keys.ToArray(),
+            cancellationToken);
+
+        return workspaces.Select(workspace => new ListWorkspaceResponse
+        {
+            Id = workspace.Id,
+            Name = workspace.Name,
+            Role = rolesByWorkspace[workspace.Id].ToString(),
+            CreatedAt = workspace.CreatedAt
+        }).ToList();
+    }
+
     public async Task DeleteAsync(
     Guid id,
     CancellationToken cancellationToken = default)
     {
-        _workspaceAuthorizationService
-            .EnsureCanDeleteWorkspace(id);
+        await _workspaceAuthorizationService
+            .EnsureCanDeleteWorkspaceAsync(id, cancellationToken);
 
         var workspace =
             await _workspaceRepository.GetByIdAsync(

@@ -11,4 +11,8 @@ public interface IWorkspaceRepository
     Task<Workspace?> GetByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default);
+
+    Task<List<Workspace>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken = default);
 }

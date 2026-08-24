@@ -1,8 +1,6 @@
 using TaskFlow.Application.Common;
 using TaskFlow.Domain.Entities;
 using TaskFlow.Application.Exceptions;
-using System.Net.Cache;
-using System.ComponentModel.DataAnnotations;
 using TaskFlow.Application.Common.Interfaces;
 
 namespace TaskFlow.Application.Tasks;
@@ -10,28 +8,33 @@ namespace TaskFlow.Application.Tasks;
 public class TaskService : ITaskService
 {
     private readonly ITaskRepository _taskRepository;
-    private readonly ICurrentWorkspace _currentWorkspace;
+    private readonly IWorkspaceAuthorizationService _workspaceAuthorizationService;
     private readonly IUnitOfWork _unitOfWork;
 
     public TaskService(
         ITaskRepository taskRepository,
-        ICurrentWorkspace currentWorkspace,
+        IWorkspaceAuthorizationService workspaceAuthorizationService,
         IUnitOfWork unitOfWork)
     {
         _taskRepository = taskRepository;
-        _currentWorkspace = currentWorkspace;
+        _workspaceAuthorizationService = workspaceAuthorizationService;
         _unitOfWork = unitOfWork;
     }
 
     public async Task<CreateTaskResponse> CreateAsync(
+        Guid workspaceId,
         CreateTaskRequest request,
         CancellationToken cancellationToken = default
     )
     {
+        await _workspaceAuthorizationService.EnsureCanViewWorkspaceAsync(
+            workspaceId,
+            cancellationToken);
+
         var task = new TaskItem(
             request.Title,
             request.Description,
-             _currentWorkspace.WorkspaceId,
+            workspaceId,
             request.ProjectId,
             request.Priority,
             request.DueDate
@@ -53,12 +56,17 @@ public class TaskService : ITaskService
     }
 
     public async Task<GetTaskResponse> GetByIdAsync(
+        Guid workspaceId,
         Guid id,
         CancellationToken cancellationToken = default)
     {
+        await _workspaceAuthorizationService.EnsureCanViewWorkspaceAsync(
+            workspaceId,
+            cancellationToken);
+
         var task = await _taskRepository.GetByIdAsync(
             id,
-            _currentWorkspace.WorkspaceId,
+            workspaceId,
             cancellationToken);
 
         if (task is null)
@@ -80,10 +88,13 @@ public class TaskService : ITaskService
     }
 
     public async Task<GetTasksResponse> GetTasksAsync(
+        Guid workspaceId,
         GetTasksRequest request,
         CancellationToken cancellationToken)
     {
-        var workspaceId = _currentWorkspace.WorkspaceId;
+        await _workspaceAuthorizationService.EnsureCanViewWorkspaceAsync(
+            workspaceId,
+            cancellationToken);
 
         var tasks = await _taskRepository.GetPagedAsync(
             workspaceId,
@@ -117,14 +128,19 @@ public class TaskService : ITaskService
     }
 
     public async Task UpdateAsync(
+        Guid workspaceId,
         Guid id,
         UpdateTaskRequest request,
         CancellationToken cancellationToken = default)
     {
+        await _workspaceAuthorizationService.EnsureCanViewWorkspaceAsync(
+            workspaceId,
+            cancellationToken);
+
         var task = await _taskRepository.GetByIdAsync(
-                        id,
-                        _currentWorkspace.WorkspaceId,
-                        cancellationToken);
+            id,
+            workspaceId,
+            cancellationToken);
 
         if (task is null)
             throw new TaskNotFoundException(id);
@@ -141,12 +157,17 @@ public class TaskService : ITaskService
     }
 
     public async Task DeleteAsync(
+        Guid workspaceId,
         Guid id,
         CancellationToken cancellationToken = default)
     {
+        await _workspaceAuthorizationService.EnsureCanViewWorkspaceAsync(
+            workspaceId,
+            cancellationToken);
+
         var task = await _taskRepository.GetByIdAsync(
             id,
-             _currentWorkspace.WorkspaceId,
+            workspaceId,
             cancellationToken);
 
         if (task is null)
