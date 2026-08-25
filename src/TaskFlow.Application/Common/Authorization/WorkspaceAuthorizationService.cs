@@ -26,7 +26,7 @@ public class WorkspaceAuthorizationService
         await GetActiveMembershipAsync(workspaceId, cancellationToken);
     }
 
-    public async Task EnsureCanManageMembersAsync(
+    public async Task<WorkspaceRole> EnsureCanManageMembersAsync(
         Guid workspaceId,
         CancellationToken cancellationToken = default)
     {
@@ -39,6 +39,8 @@ public class WorkspaceAuthorizationService
         {
             throw new InsufficientWorkspaceRoleException();
         }
+
+        return membership.Role;
     }
 
     public async Task EnsureCanDeleteWorkspaceAsync(

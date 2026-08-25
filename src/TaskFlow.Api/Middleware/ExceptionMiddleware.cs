@@ -51,6 +51,21 @@ public class ExceptionMiddleware
                 WorkspaceNotFoundException =>
                     (StatusCodes.Status404NotFound, ex.Message),
 
+                UserNotFoundException =>
+                    (StatusCodes.Status404NotFound, ex.Message),
+
+                WorkspaceMemberNotFoundException =>
+                    (StatusCodes.Status404NotFound, ex.Message),
+
+                WorkspaceMemberAlreadyExistsException =>
+                    (StatusCodes.Status409Conflict, ex.Message),
+
+                LastWorkspaceOwnerException =>
+                    (StatusCodes.Status409Conflict, ex.Message),
+
+                InvalidWorkspaceRoleException =>
+                    (StatusCodes.Status400BadRequest, ex.Message),
+
                 _ =>
                     (
                         StatusCodes.Status500InternalServerError,

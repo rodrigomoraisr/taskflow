@@ -46,7 +46,7 @@ public class WorkspacesController : ControllerBase
         return Ok(response);
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("{id:guid}")]
     public async Task<ActionResult<GetWorkspaceResponse>> GetById(
         Guid id,
         CancellationToken cancellationToken)
@@ -59,13 +59,69 @@ public class WorkspacesController : ControllerBase
         return Ok(response);
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(
     Guid id,
     CancellationToken cancellationToken)
     {
         await _workspaceService.DeleteAsync(
             id,
+            cancellationToken);
+
+        return NoContent();
+    }
+
+    [HttpGet("{workspaceId:guid}/members")]
+    public async Task<ActionResult<List<GetWorkspaceMemberResponse>>> GetMembers(
+        Guid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        var response = await _workspaceService.GetMembersAsync(
+            workspaceId,
+            cancellationToken);
+
+        return Ok(response);
+    }
+
+    [HttpPost("{workspaceId:guid}/members")]
+    public async Task<ActionResult<GetWorkspaceMemberResponse>> AddMember(
+        Guid workspaceId,
+        AddWorkspaceMemberRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _workspaceService.AddMemberAsync(
+            workspaceId,
+            request,
+            cancellationToken);
+
+        return StatusCode(StatusCodes.Status201Created, response);
+    }
+
+    [HttpPatch("{workspaceId:guid}/members/{userId:guid}/role")]
+    public async Task<IActionResult> ChangeMemberRole(
+        Guid workspaceId,
+        Guid userId,
+        ChangeWorkspaceMemberRoleRequest request,
+        CancellationToken cancellationToken)
+    {
+        await _workspaceService.ChangeMemberRoleAsync(
+            workspaceId,
+            userId,
+            request,
+            cancellationToken);
+
+        return NoContent();
+    }
+
+    [HttpDelete("{workspaceId:guid}/members/{userId:guid}")]
+    public async Task<IActionResult> RemoveMember(
+        Guid workspaceId,
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        await _workspaceService.RemoveMemberAsync(
+            workspaceId,
+            userId,
             cancellationToken);
 
         return NoContent();

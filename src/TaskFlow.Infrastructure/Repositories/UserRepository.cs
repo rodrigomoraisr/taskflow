@@ -43,4 +43,14 @@ public class UserRepository : IUserRepository
                 u => u.Id == id,
                 cancellationToken);
     }
+
+    public async Task<List<User>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Users
+            .AsNoTracking()
+            .Where(user => ids.Contains(user.Id))
+            .ToListAsync(cancellationToken);
+    }
 }

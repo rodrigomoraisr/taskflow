@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using TaskFlow.Application.Common.Interfaces;
 using TaskFlow.Domain.Entities;
+using TaskFlow.Domain.Enums;
 using TaskFlow.Infrastructure.Persistence;
 
 namespace TaskFlow.Infrastructure.Repositories;
@@ -54,5 +55,40 @@ public class WorkspaceUserRepository : IWorkspaceUserRepository
                                           !workspace.IsDeleted))
             .OrderBy(wu => wu.CreatedAt)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<WorkspaceUser>> GetActiveByWorkspaceAsync(
+        Guid workspaceId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.WorkspaceUsers
+            .AsNoTracking()
+            .Where(membership => membership.WorkspaceId == workspaceId &&
+                                 !membership.IsDeleted)
+            .OrderBy(membership => membership.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<WorkspaceUser?> GetByUserAndWorkspaceAsync(
+        Guid userId,
+        Guid workspaceId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.WorkspaceUsers
+            .FirstOrDefaultAsync(
+                membership => membership.UserId == userId &&
+                              membership.WorkspaceId == workspaceId,
+                cancellationToken);
+    }
+
+    public async Task<int> CountActiveOwnersAsync(
+        Guid workspaceId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.WorkspaceUsers.CountAsync(
+            membership => membership.WorkspaceId == workspaceId &&
+                          membership.Role == WorkspaceRole.Owner &&
+                          !membership.IsDeleted,
+            cancellationToken);
     }
 }

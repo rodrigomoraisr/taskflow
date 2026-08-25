@@ -1,3 +1,5 @@
+using TaskFlow.Domain.Enums;
+
 namespace TaskFlow.Application.Common.Interfaces;
 
 public interface IWorkspaceAuthorizationService
@@ -6,7 +8,7 @@ public interface IWorkspaceAuthorizationService
         Guid workspaceId,
         CancellationToken cancellationToken = default);
 
-    Task EnsureCanManageMembersAsync(
+    Task<WorkspaceRole> EnsureCanManageMembersAsync(
         Guid workspaceId,
         CancellationToken cancellationToken = default);
 
