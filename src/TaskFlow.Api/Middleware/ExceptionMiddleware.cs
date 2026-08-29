@@ -1,5 +1,6 @@
 using TaskFlow.Application.Common.Exceptions;
 using TaskFlow.Application.Exceptions;
+using TaskFlow.Domain.Exceptions;
 
 namespace TaskFlow.Api.Middleware;
 
@@ -64,6 +65,15 @@ public class ExceptionMiddleware
                     (StatusCodes.Status409Conflict, ex.Message),
 
                 InvalidWorkspaceRoleException =>
+                    (StatusCodes.Status400BadRequest, ex.Message),
+
+                ProjectNotFoundException =>
+                    (StatusCodes.Status404NotFound, ex.Message),
+
+                ProjectAlreadyDeletedException =>
+                    (StatusCodes.Status409Conflict, ex.Message),
+
+                ArgumentException =>
                     (StatusCodes.Status400BadRequest, ex.Message),
 
                 _ =>

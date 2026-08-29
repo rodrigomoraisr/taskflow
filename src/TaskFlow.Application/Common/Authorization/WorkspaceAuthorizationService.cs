@@ -57,6 +57,28 @@ public class WorkspaceAuthorizationService
         }
     }
 
+    public async Task EnsureCanViewProjectsAsync(
+        Guid workspaceId,
+        CancellationToken cancellationToken = default)
+    {
+        await GetActiveMembershipAsync(workspaceId, cancellationToken);
+    }
+
+    public async Task EnsureCanManageProjectsAsync(
+        Guid workspaceId,
+        CancellationToken cancellationToken = default)
+    {
+        var membership = await GetActiveMembershipAsync(
+            workspaceId,
+            cancellationToken);
+
+        if (membership.Role != WorkspaceRole.Owner &&
+            membership.Role != WorkspaceRole.Admin)
+        {
+            throw new InsufficientWorkspaceRoleException();
+        }
+    }
+
     private async Task<WorkspaceUser> GetActiveMembershipAsync(
         Guid workspaceId,
         CancellationToken cancellationToken)

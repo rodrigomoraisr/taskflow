@@ -2,6 +2,7 @@ using TaskFlow.Application.Common;
 using TaskFlow.Domain.Entities;
 using TaskFlow.Application.Exceptions;
 using TaskFlow.Application.Common.Interfaces;
+using TaskFlow.Application.Common.Exceptions;
 
 namespace TaskFlow.Application.Tasks;
 
@@ -9,15 +10,18 @@ public class TaskService : ITaskService
 {
     private readonly ITaskRepository _taskRepository;
     private readonly IWorkspaceAuthorizationService _workspaceAuthorizationService;
+    private readonly IProjectRepository _projectRepository;
     private readonly IUnitOfWork _unitOfWork;
 
     public TaskService(
         ITaskRepository taskRepository,
         IWorkspaceAuthorizationService workspaceAuthorizationService,
+        IProjectRepository projectRepository,
         IUnitOfWork unitOfWork)
     {
         _taskRepository = taskRepository;
         _workspaceAuthorizationService = workspaceAuthorizationService;
+        _projectRepository = projectRepository;
         _unitOfWork = unitOfWork;
     }
 
@@ -30,6 +34,14 @@ public class TaskService : ITaskService
         await _workspaceAuthorizationService.EnsureCanViewWorkspaceAsync(
             workspaceId,
             cancellationToken);
+
+        var project = await _projectRepository.GetByIdAsync(
+            request.ProjectId,
+            workspaceId,
+            cancellationToken);
+
+        if (project is null)
+            throw new ProjectNotFoundException(request.ProjectId);
 
         var task = new TaskItem(
             request.Title,

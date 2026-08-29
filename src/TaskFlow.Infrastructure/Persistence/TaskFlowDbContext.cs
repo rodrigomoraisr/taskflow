@@ -11,6 +11,7 @@ public class TaskFlowDbContext : DbContext
     }
 
     public DbSet<TaskItem> Tasks => Set<TaskItem>();
+    public DbSet<Project> Projects => Set<Project>();
     public DbSet<User> Users { get; set; }
     public DbSet<Workspace> Workspaces => Set<Workspace>();
     public DbSet<WorkspaceUser> WorkspaceUsers => Set<WorkspaceUser>();

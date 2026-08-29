@@ -15,6 +15,7 @@ using System.Text;
 using TaskFlow.Application.Workspaces;
 using TaskFlow.Api.Security;
 using TaskFlow.Application.Common.Authorization;
+using TaskFlow.Application.Projects;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +30,8 @@ builder.Services.AddScoped<IWorkspaceAuthorizationService, WorkspaceAuthorizatio
 
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
+builder.Services.AddScoped<IProjectService, ProjectService>();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();

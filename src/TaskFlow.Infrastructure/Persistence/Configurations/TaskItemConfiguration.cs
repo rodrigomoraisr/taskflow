@@ -19,5 +19,26 @@ public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
 
         builder.Property(x => x.Status)
             .HasConversion<string>();
+
+        builder.HasOne<Project>()
+            .WithMany()
+            .HasForeignKey(task => new
+            {
+                task.WorkspaceId,
+                task.ProjectId
+            })
+            .HasPrincipalKey(project => new
+            {
+                project.WorkspaceId,
+                project.Id
+            })
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(task => new
+        {
+            task.WorkspaceId,
+            task.ProjectId,
+            task.IsDeleted
+        });
     }
 }

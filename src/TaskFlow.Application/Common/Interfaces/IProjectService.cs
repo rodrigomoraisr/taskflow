@@ -1,26 +1,31 @@
-using TaskFlow.Domain.Enums;
+using TaskFlow.Application.Projects;
 
 namespace TaskFlow.Application.Common.Interfaces;
 
-public interface IWorkspaceAuthorizationService
+public interface IProjectService
 {
-    Task EnsureCanViewWorkspaceAsync(
+    Task<CreateProjectResponse> CreateAsync(
+        Guid workspaceId,
+        CreateProjectRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<GetProjectResponse> GetByIdAsync(
+        Guid workspaceId,
+        Guid projectId,
+        CancellationToken cancellationToken = default);
+
+    Task<GetProjectsResponse> GetProjectsAsync(
         Guid workspaceId,
         CancellationToken cancellationToken = default);
 
-    Task<WorkspaceRole> EnsureCanManageMembersAsync(
+    Task UpdateAsync(
         Guid workspaceId,
+        Guid projectId,
+        UpdateProjectRequest request,
         CancellationToken cancellationToken = default);
 
-    Task EnsureCanDeleteWorkspaceAsync(
+    Task DeleteAsync(
         Guid workspaceId,
-        CancellationToken cancellationToken = default);
-
-    Task EnsureCanViewProjectsAsync(
-        Guid workspaceId,
-        CancellationToken cancellationToken = default);
-
-    Task EnsureCanManageProjectsAsync(
-        Guid workspaceId,
+        Guid projectId,
         CancellationToken cancellationToken = default);
 }

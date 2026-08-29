@@ -27,7 +27,11 @@ public class TaskRepository : ITaskRepository
             .FirstOrDefaultAsync(
                 t => t.Id == id &&
                 t.WorkspaceId == workspaceId &&
-                !t.IsDeleted,
+                !t.IsDeleted &&
+                _dbContext.Projects.Any(
+                    project => project.Id == t.ProjectId &&
+                               project.WorkspaceId == t.WorkspaceId &&
+                               !project.IsDeleted),
          cancellationToken);
     }
 
@@ -37,7 +41,11 @@ public class TaskRepository : ITaskRepository
             .AsNoTracking()
             .Where(t => 
                 t.WorkspaceId == workspaceId && 
-                !t.IsDeleted)
+                !t.IsDeleted &&
+                _dbContext.Projects.Any(
+                    project => project.Id == t.ProjectId &&
+                               project.WorkspaceId == t.WorkspaceId &&
+                               !project.IsDeleted))
             .OrderByDescending(t => t.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -48,7 +56,12 @@ public class TaskRepository : ITaskRepository
     {
         return await _dbContext.Tasks
             .CountAsync(
-            t =>  t.WorkspaceId == workspaceId && !t.IsDeleted,
+            t => t.WorkspaceId == workspaceId &&
+                 !t.IsDeleted &&
+                 _dbContext.Projects.Any(
+                     project => project.Id == t.ProjectId &&
+                                project.WorkspaceId == t.WorkspaceId &&
+                                !project.IsDeleted),
             cancellationToken);
     }
 }
