@@ -50,7 +50,7 @@ public class TaskItem : BaseEntity
         Id = Guid.NewGuid();
     }
 
-    public void AssignUser(Guid userId)
+    public void AssignTo(Guid userId)
     {
         EnsureNotDeleted();
 
@@ -62,26 +62,41 @@ public class TaskItem : BaseEntity
         UpdatedAt = DateTime.UtcNow;
     }
 
+    public void Unassign()
+    {
+        EnsureNotDeleted();
+
+        if (AssigneeUserId is null)
+            return;
+
+        AssigneeUserId = null;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public void Start()
     {
         EnsureNotDeleted();
 
         if(Status != TaskItemStatus.Todo)
-            throw new InvalidOperationException(
-                "Only Todo tasks can be started.");
+            throw new InvalidTaskStatusTransitionException(
+                Status,
+                TaskItemStatus.InProgress);
 
         Status = TaskItemStatus.InProgress;
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void MarkAsDone()
+    public void Complete()
     {
         EnsureNotDeleted();
 
-        if(Status == TaskItemStatus.Done)
-            throw new InvalidOperationException(
-                "Task is already completed."
-            );
+        if(Status != TaskItemStatus.Todo &&
+           Status != TaskItemStatus.InProgress)
+        {
+            throw new InvalidTaskStatusTransitionException(
+                Status,
+                TaskItemStatus.Done);
+        }
         
         Status = TaskItemStatus.Done;
         UpdatedAt = DateTime.UtcNow;
@@ -92,11 +107,11 @@ public class TaskItem : BaseEntity
         EnsureNotDeleted();
 
         if(Status != TaskItemStatus.Done)
-            throw new InvalidOperationException(
-                "Only completed tasks can be reopened."
-            );
+            throw new InvalidTaskStatusTransitionException(
+                Status,
+                TaskItemStatus.Todo);
 
-        Status = TaskItemStatus.InProgress;
+        Status = TaskItemStatus.Todo;
         UpdatedAt = DateTime.UtcNow;
     }
 
@@ -122,8 +137,7 @@ public class TaskItem : BaseEntity
         string title,
         string description,
         TaskPriority priority,
-        DateTime? dueDate,
-        Guid assigneeUserId
+        DateTime? dueDate
     )
     {
         EnsureNotDeleted();
@@ -136,7 +150,6 @@ public class TaskItem : BaseEntity
         Description = description;
         Priority = priority;
         DueDate = dueDate;
-        AssigneeUserId = assigneeUserId;
         UpdatedAt = DateTime.UtcNow;
     }
 }

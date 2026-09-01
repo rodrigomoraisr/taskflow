@@ -10,5 +10,4 @@ public class UpdateTaskRequest
     public string Description { get; set; } = string.Empty;
     public TaskPriority Priority { get; set; }
     public DateTime? DueDate { get; set; }
-    public Guid AssigneeUserId { get; set; }
 }

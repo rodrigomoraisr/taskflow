@@ -29,4 +29,30 @@ public interface ITaskService
         Guid workspaceId,
         Guid id,
         CancellationToken cancellationToken = default);
+
+    Task StartAsync(
+        Guid workspaceId,
+        Guid id,
+        CancellationToken cancellationToken = default);
+
+    Task CompleteAsync(
+        Guid workspaceId,
+        Guid id,
+        CancellationToken cancellationToken = default);
+
+    Task ReopenAsync(
+        Guid workspaceId,
+        Guid id,
+        CancellationToken cancellationToken = default);
+
+    Task AssignAsync(
+        Guid workspaceId,
+        Guid id,
+        Guid userId,
+        CancellationToken cancellationToken = default);
+
+    Task UnassignAsync(
+        Guid workspaceId,
+        Guid id,
+        CancellationToken cancellationToken = default);
 }

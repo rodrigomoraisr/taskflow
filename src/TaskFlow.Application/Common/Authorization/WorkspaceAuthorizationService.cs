@@ -19,6 +19,17 @@ public class WorkspaceAuthorizationService
         _workspaceUserRepository = workspaceUserRepository;
     }
 
+    public async Task<WorkspaceRole> GetActiveRoleAsync(
+        Guid workspaceId,
+        CancellationToken cancellationToken = default)
+    {
+        var membership = await GetActiveMembershipAsync(
+            workspaceId,
+            cancellationToken);
+
+        return membership.Role;
+    }
+
     public async Task EnsureCanViewWorkspaceAsync(
         Guid workspaceId,
         CancellationToken cancellationToken = default)

@@ -4,6 +4,10 @@ namespace TaskFlow.Application.Common.Interfaces;
 
 public interface IWorkspaceAuthorizationService
 {
+    Task<WorkspaceRole> GetActiveRoleAsync(
+        Guid workspaceId,
+        CancellationToken cancellationToken = default);
+
     Task EnsureCanViewWorkspaceAsync(
         Guid workspaceId,
         CancellationToken cancellationToken = default);

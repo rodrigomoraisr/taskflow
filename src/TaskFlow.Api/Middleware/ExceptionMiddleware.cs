@@ -76,6 +76,12 @@ public class ExceptionMiddleware
                 ArgumentException =>
                     (StatusCodes.Status400BadRequest, ex.Message),
 
+                InvalidTaskStatusTransitionException =>
+                    (StatusCodes.Status409Conflict, ex.Message),
+
+                InvalidTaskAssignmentException =>
+                    (StatusCodes.Status403Forbidden, ex.Message),
+
                 _ =>
                     (
                         StatusCodes.Status500InternalServerError,

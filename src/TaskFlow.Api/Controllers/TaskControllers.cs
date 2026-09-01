@@ -94,4 +94,76 @@ public class TasksController : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("{id:guid}/start")]
+    public async Task<IActionResult> Start(
+        Guid workspaceId,
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        await _taskService.StartAsync(
+            workspaceId,
+            id,
+            cancellationToken);
+
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/complete")]
+    public async Task<IActionResult> Complete(
+        Guid workspaceId,
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        await _taskService.CompleteAsync(
+            workspaceId,
+            id,
+            cancellationToken);
+
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/reopen")]
+    public async Task<IActionResult> Reopen(
+        Guid workspaceId,
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        await _taskService.ReopenAsync(
+            workspaceId,
+            id,
+            cancellationToken);
+
+        return NoContent();
+    }
+
+    [HttpPut("{id:guid}/assignee")]
+    public async Task<IActionResult> Assign(
+        Guid workspaceId,
+        Guid id,
+        AssignTaskRequest request,
+        CancellationToken cancellationToken)
+    {
+        await _taskService.AssignAsync(
+            workspaceId,
+            id,
+            request.UserId,
+            cancellationToken);
+
+        return NoContent();
+    }
+
+    [HttpDelete("{id:guid}/assignee")]
+    public async Task<IActionResult> Unassign(
+        Guid workspaceId,
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        await _taskService.UnassignAsync(
+            workspaceId,
+            id,
+            cancellationToken);
+
+        return NoContent();
+    }
+
 }

@@ -9,6 +9,7 @@ public class GetTaskResponse
     public string Description { get; set; } = string.Empty;
     public Guid WorkspaceId { get; set; }
     public Guid ProjectId { get; set; }
+    public Guid? AssigneeUserId { get; set; }
     public TaskItemStatus Status { get; set; }
     public TaskPriority Priority { get; set; }
     public DateTime CreatedAt { get; set; }
