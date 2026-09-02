@@ -6,8 +6,8 @@
     <Project Path="src/TaskFlow.Infrastructure/TaskFlow.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/TaskFlow.Api.IntegrationTests/TaskFlow.Api.IntegrationTests.csproj" />
-    <Project Path="tests/TaskFlow.Application.Tests/TaskFlow.Application.Tests.csproj" />
-    <Project Path="tests/TaskFlow.Domain.Tests/TaskFlow.Domain.Tests.csproj" />
+    <Project Path="Tests/TaskFlow.Api.IntegrationTests/TaskFlow.Api.IntegrationTests.csproj" />
+    <Project Path="Tests/TaskFlow.Application.Tests/TaskFlow.Application.Tests.csproj" />
+    <Project Path="Tests/TaskFlow.Domain.Tests/TaskFlow.Domain.Tests.csproj" />
   </Folder>
 </Solution>
