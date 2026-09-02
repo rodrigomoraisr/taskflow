@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\TaskFlow.Domain\TaskFlow.Domain.csproj" />
+    <ProjectReference Include="..\TaskFlow.TestSupport\TaskFlow.TestSupport.csproj" />
   </ItemGroup>
 
 </Project>

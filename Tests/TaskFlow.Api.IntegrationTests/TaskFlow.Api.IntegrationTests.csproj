@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\TaskFlow.Api\TaskFlow.Api.csproj" />
+    <ProjectReference Include="..\TaskFlow.TestSupport\TaskFlow.TestSupport.csproj" />
   </ItemGroup>
 
 </Project>

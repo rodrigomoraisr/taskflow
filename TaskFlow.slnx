@@ -9,5 +9,6 @@
     <Project Path="Tests/TaskFlow.Api.IntegrationTests/TaskFlow.Api.IntegrationTests.csproj" />
     <Project Path="Tests/TaskFlow.Application.Tests/TaskFlow.Application.Tests.csproj" />
     <Project Path="Tests/TaskFlow.Domain.Tests/TaskFlow.Domain.Tests.csproj" />
+    <Project Path="Tests/TaskFlow.TestSupport/TaskFlow.TestSupport.csproj" />
   </Folder>
 </Solution>
