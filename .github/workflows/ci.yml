@@ -10,24 +10,13 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
-    # Uncomment from phase 8.2 onward, when integration tests need a real database.
-    # Testcontainers manages its own containers, so this service block is only
-    # needed if you point tests at a fixed connection string instead.
-    #
-    # services:
-    #   postgres:
-    #     image: postgres:17
-    #     env:
-    #       POSTGRES_DB: taskflow_test
-    #       POSTGRES_USER: postgres
-    #       POSTGRES_PASSWORD: postgres
-    #     ports:
-    #       - 5432:5432
-    #     options: >-
-    #       --health-cmd pg_isready
-    #       --health-interval 10s
-    #       --health-timeout 5s
-    #       --health-retries 5
+    # No postgres service container here on purpose. The integration tests use
+    # Testcontainers (see Tests/TaskFlow.Api.IntegrationTests/Infrastructure),
+    # which starts and disposes its own postgres:17 instance on an ephemeral
+    # port. A service container would only be needed if the tests pointed at a
+    # fixed connection string, and having both would just mean two databases,
+    # one of them unused. The ubuntu-latest runner provides the Docker daemon
+    # Testcontainers needs.
 
     steps:
       - name: Checkout
