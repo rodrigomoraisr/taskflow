@@ -11,7 +11,7 @@ namespace TaskFlow.Domain.Tests.TestSupport;
 public class BuilderTests
 {
     [Fact]
-    public void TaskItemBuilder_WithNoConfiguration_ShouldProduceAnActiveTodoTask()
+    public void TaskItemBuilder_WhenNothingIsConfigured_ShouldProduceAnActiveTodoTask()
     {
         // Arrange
         var builder = new TaskItemBuilder();
@@ -31,7 +31,7 @@ public class BuilderTests
     [InlineData(TaskItemStatus.Todo)]
     [InlineData(TaskItemStatus.InProgress)]
     [InlineData(TaskItemStatus.Done)]
-    public void TaskItemBuilder_WithStatus_ShouldReachThatStatus(
+    public void TaskItemBuilder_WhenGivenAStatus_ShouldReachThatStatus(
         TaskItemStatus status)
     {
         // Arrange
@@ -62,7 +62,7 @@ public class BuilderTests
     }
 
     [Fact]
-    public void TaskItemBuilder_InWorkspace_ShouldPlaceTheTaskInThatTenant()
+    public void TaskItemBuilder_WhenGivenAWorkspace_ShouldPlaceTheTaskInThatTenant()
     {
         // Arrange
         var workspaceId = Guid.NewGuid();
@@ -77,7 +77,7 @@ public class BuilderTests
     }
 
     [Fact]
-    public void ProjectBuilder_WithNoConfiguration_ShouldProduceAnActiveProject()
+    public void ProjectBuilder_WhenNothingIsConfigured_ShouldProduceAnActiveProject()
     {
         // Arrange
         var builder = new ProjectBuilder();
@@ -95,7 +95,7 @@ public class BuilderTests
     [InlineData(ProjectStatus.Active)]
     [InlineData(ProjectStatus.OnHold)]
     [InlineData(ProjectStatus.Completed)]
-    public void ProjectBuilder_WithStatus_ShouldReachThatStatus(
+    public void ProjectBuilder_WhenGivenAStatus_ShouldReachThatStatus(
         ProjectStatus status)
     {
         // Arrange
@@ -125,7 +125,7 @@ public class BuilderTests
     }
 
     [Fact]
-    public void WorkspaceUserBuilder_WithNoConfiguration_ShouldProduceAnActiveMember()
+    public void WorkspaceUserBuilder_WhenNothingIsConfigured_ShouldProduceAnActiveMember()
     {
         // Arrange
         var builder = new WorkspaceUserBuilder();
@@ -143,7 +143,7 @@ public class BuilderTests
     [InlineData(WorkspaceRole.Admin)]
     [InlineData(WorkspaceRole.Member)]
     [InlineData(WorkspaceRole.Viewer)]
-    public void WorkspaceUserBuilder_AsRole_ShouldProduceThatRole(
+    public void WorkspaceUserBuilder_WhenGivenARole_ShouldProduceThatRole(
         WorkspaceRole role)
     {
         // Arrange
@@ -157,7 +157,7 @@ public class BuilderTests
     }
 
     [Fact]
-    public void WorkspaceUserBuilder_Removed_ShouldSoftDeleteTheMembership()
+    public void WorkspaceUserBuilder_WhenRemoved_ShouldSoftDeleteTheMembership()
     {
         // Arrange
         var builder = new WorkspaceUserBuilder().AsOwner().Removed();
@@ -187,7 +187,7 @@ public class BuilderTests
     }
 
     [Fact]
-    public void WorkspaceBuilder_Deleted_ShouldSoftDeleteTheWorkspace()
+    public void WorkspaceBuilder_WhenDeleted_ShouldSoftDeleteTheWorkspace()
     {
         // Arrange
         var builder = new WorkspaceBuilder().Deleted();
