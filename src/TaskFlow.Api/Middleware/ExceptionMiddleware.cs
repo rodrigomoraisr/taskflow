@@ -34,9 +34,6 @@ public class ExceptionMiddleware
                 InvalidCredentialsException =>
                     (StatusCodes.Status401Unauthorized, ex.Message),
 
-                UserWithoutWorkspaceException =>
-                    (StatusCodes.Status403Forbidden, ex.Message),
-                    
                 InvalidUserIdentityException =>
                     (StatusCodes.Status401Unauthorized, ex.Message),
 
