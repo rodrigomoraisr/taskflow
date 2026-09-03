@@ -1,0 +1,48 @@
+# Line endings
+#
+# Before this file existed the repository stored a per-file mix: most blobs were
+# LF, four were CRLF, and Program.cs and TaskFlow.Api.csproj were mixed inside a
+# single file. That mix is invisible on Windows, where core.autocrlf hides it,
+# but it turns a small edit into a whole-file diff whenever a tool writes the
+# other ending — a 26-line change to Program.cs once showed up as 178 changed
+# lines, which makes a commit unreviewable.
+#
+# text=auto: git normalises every text file to LF in the repository and checks it
+# out with the platform's native endings. Windows working copies stay CRLF, the
+# Linux CI runner gets LF, and the stored blob is the same either way.
+* text=auto
+
+# Spelled out per type so a new tool cannot guess wrong about a file git has not
+# seen before.
+*.cs       text diff=csharp
+*.csproj   text
+*.slnx     text
+*.json     text
+*.md       text
+*.yml      text
+*.yaml     text
+*.http     text
+*.sql      text
+.gitignore text
+
+# Shell scripts must be LF on every platform or the interpreter chokes on the
+# carriage return. None exist yet; this is here so the first one is correct.
+*.sh       text eol=lf
+
+# Windows scripts are the mirror image.
+*.cmd      text eol=crlf
+*.bat      text eol=crlf
+
+# Binary — never normalise, never diff as text. None are committed today, but
+# these are the types a portfolio repo tends to acquire (an architecture diagram
+# is on the roadmap).
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.zip  binary
+*.dll  binary
+*.exe  binary
+*.snk  binary
