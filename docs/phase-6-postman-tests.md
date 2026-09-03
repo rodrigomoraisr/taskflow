@@ -59,7 +59,7 @@ Store the returned `id` as `projectAId`. Create another project in Workspace B a
 | Admin creates project | Admin | `201` |
 | Member creates project | Member | `403` |
 | Viewer creates project | Viewer | `403` |
-| Outsider creates project | Outsider | `403` |
+| Outsider creates project | Outsider | `404` |
 | Missing token | none | `401` |
 | Empty/whitespace name | Owner | `400` |
 | Name longer than 200 characters | Owner | `400` |
@@ -80,7 +80,7 @@ GET {{baseUrl}}/api/workspaces/{{workspaceAId}}/projects/{{projectAId}}
 | Admin lists/views | Admin | `200` |
 | Member lists/views | Member | `200` |
 | Viewer lists/views | Viewer | `200` |
-| Outsider lists/views | Outsider | `403` |
+| Outsider lists/views | Outsider | `404` |
 | Unknown Project ID in accessible workspace | any active member | `404` |
 
 For every returned project, assert:
@@ -112,7 +112,7 @@ Content-Type: application/json
 | Admin updates details/status | Admin | `204` |
 | Member updates | Member | `403` |
 | Viewer updates | Viewer | `403` |
-| Outsider updates | Outsider | `403` |
+| Outsider updates | Outsider | `404` |
 | Unknown project in accessible workspace | Owner | `404` |
 | Status `999` | Owner | `400` |
 | Missing status | Owner | `400` |
@@ -126,7 +126,7 @@ There are two distinct boundaries to verify.
 
 ### Caller lacks workspace membership
 
-Use `outsiderToken` against every Workspace A Project endpoint. Each request must return `403`, and no data may change.
+Use `outsiderToken` against every Workspace A Project endpoint. Each request must return `404`, and no data may change.
 
 ### Caller belongs to both workspaces but uses the wrong route
 
@@ -167,7 +167,7 @@ Then run:
 | Cross-workspace project | Workspace A | Project B | `404` |
 | Random project ID | Workspace A | random GUID | `404` |
 | Empty project ID | Workspace A | all-zero GUID | `404` |
-| Caller lacks Workspace A membership | Workspace A | Project A | `403` |
+| Caller lacks Workspace A membership | Workspace A | Project A | `404` |
 
 After the rejected cross-workspace request, list Workspace A Tasks and confirm no Task was created with `projectBId`.
 
@@ -212,7 +212,7 @@ Use disposable projects for each successful deletion.
 | Admin deletes | Admin | `204` |
 | Member deletes | Member | `403` |
 | Viewer deletes | Viewer | `403` |
-| Outsider deletes | Outsider | `403` |
+| Outsider deletes | Outsider | `404` |
 
 ## Regression checks
 

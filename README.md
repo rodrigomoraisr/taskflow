@@ -133,6 +133,15 @@ methods take a `workspaceId` and filter on it. A service that forgets to check
 authorization is a bug; a repository that cannot express a cross-tenant query is a
 design. The two layers are belt and braces on the same invariant.
 
+**A non-member gets 404, not 403.** If you are not a member of a workspace, every
+route under it answers exactly as though that workspace did not exist — same status,
+same body. A 403 would confirm the workspace is real, which lets an outsider probe for
+tenants by id. 403 is reserved for a caller who *is* a member but whose role does not
+permit the action; that caller already knows the workspace exists, so the precise
+answer costs nothing. The two cases stay distinct inside the application
+(`UnauthorizedWorkspaceAccessException` versus `InsufficientWorkspaceRoleException`)
+and are collapsed at the HTTP boundary in `ExceptionMiddleware`.
+
 **Status transitions are methods, not a settable property.** `task.Status = Done`
 would let a caller skip validation. `task.Complete()` cannot — it checks the current
 state and throws `InvalidTaskStatusTransitionException` if the move is illegal. The

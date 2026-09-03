@@ -126,7 +126,7 @@ Run a valid transition against a fresh Todo Task for each role:
 | Admin | `204` |
 | Member | `204` |
 | Viewer | `403` |
-| Outsider | `403` |
+| Outsider | `404` |
 | No token | `401` |
 
 ## Assignment endpoint
@@ -166,7 +166,7 @@ Use fresh unassigned Tasks where the case requires one.
 | Member A self-assigns Task already assigned to Member A | `403` |
 | Member A assigns Member B | `403` |
 | Viewer self-assigns | `403` |
-| Outsider assigns | `403` |
+| Outsider assigns | `404` |
 | Empty/all-zero user ID by Owner | `400` |
 
 For every rejected operation, GET the Task and verify its assignee did not change.
@@ -205,13 +205,13 @@ Authorization: Bearer {{ownerToken}}
 | Owner/Admin unassigns already-unassigned Task | `204` idempotently |
 | Member unassigns | `403` |
 | Viewer unassigns | `403` |
-| Outsider unassigns | `403` |
+| Outsider unassigns | `404` |
 
 ## Tenant isolation
 
 ### Caller lacks membership
 
-Call all five workflow endpoints in Workspace A with `outsiderToken`. Every request must return `403`.
+Call all five workflow endpoints in Workspace A with `outsiderToken`. Every request must return `404`.
 
 ### Caller belongs to both workspaces
 

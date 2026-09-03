@@ -60,8 +60,9 @@ The suite should prove, at minimum:
 - A user in workspace A cannot read, update or delete a task in workspace B.
 - The same for projects, and for workspace membership.
 - A `Viewer` cannot mutate anything; a `Member` cannot change roles.
-- A non-member gets 403 or 404, never 200 — and the choice between 403 and 404 is
-  deliberate and consistent.
+- A non-member gets 404, never 403 and never 200: the response is identical to the one
+  for a workspace that does not exist. A member whose role is too low gets 403.
+  Settled — see "403 versus 404" in CLAUDE.md.
 - The last owner of a workspace cannot be removed or demoted.
 - A soft-deleted entity is invisible to reads and rejects writes.
 

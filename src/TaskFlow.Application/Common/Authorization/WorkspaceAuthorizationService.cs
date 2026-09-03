@@ -101,7 +101,7 @@ public class WorkspaceAuthorizationService
 
         if (membership is null)
         {
-            throw new UnauthorizedWorkspaceAccessException();
+            throw new UnauthorizedWorkspaceAccessException(workspaceId);
         }
 
         return membership;

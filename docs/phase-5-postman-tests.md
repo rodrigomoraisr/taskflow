@@ -41,7 +41,7 @@ GET {{baseUrl}}/api/workspaces/{{workspaceId}}/members
 | Case | Token | Expected |
 |---|---|---|
 | Owner lists members | `ownerToken` | `200`; initial list contains only Owner |
-| User without membership lists members | `memberToken` before being added | `403` |
+| User without membership lists members | `memberToken` before being added | `404` |
 | No token | none | `401` |
 
 ## Add members
@@ -131,7 +131,7 @@ DELETE {{baseUrl}}/api/workspaces/{{workspaceId}}/members/{{targetUserId}}
 |---|---|---|---|
 | Remove Member | Admin | Member | `204` |
 | List after removal | Owner | removed Member | `200`; target absent |
-| Removed user accesses workspace/tasks | removed user's token | any workspace route | `403` immediately |
+| Removed user accesses workspace/tasks | removed user's token | any workspace route | `404` immediately |
 | Remove missing/already removed member | Owner | removed Member | `404` |
 | Re-add removed member by email | Admin | removed Member | `201`; restored as `Member` |
 | Remove Admin | Admin | Admin | `403` |
@@ -154,4 +154,4 @@ PATCH  /api/workspaces/{workspaceId}/members/{userId}/role
 DELETE /api/workspaces/{workspaceId}/members/{userId}
 ```
 
-Every request must return `403`, and no membership data may change.
+Every request must return `404`, and no membership data may change.

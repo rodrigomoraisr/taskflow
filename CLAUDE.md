@@ -67,6 +67,21 @@ _taskAuthorizationService.EnsureCanEdit(role);
 // ... only then load or mutate anything
 ```
 
+### 403 versus 404
+
+Settled, and every tenant-isolation test asserts it:
+
+- **Not a member of the workspace → 404**, with a body identical to a workspace that
+  genuinely does not exist. Never confirm existence across a tenant boundary.
+- **A member whose role is too low → 403.** That caller already knows the workspace
+  exists, so naming the real reason leaks nothing.
+
+`UnauthorizedWorkspaceAccessException` and `WorkspaceNotFoundException` stay separate
+types so the application layer can tell the two apart. `ExceptionMiddleware` renders
+both through a single `WorkspaceNotFound` helper, so the two responses are
+byte-identical. A new workspace-scoped route inherits this for free by letting
+`IWorkspaceAuthorizationService` throw — do not hand-roll a 403 for a non-member.
+
 ## Domain entity conventions
 
 - Public properties have `private set`. Mutation happens through intention-revealing
