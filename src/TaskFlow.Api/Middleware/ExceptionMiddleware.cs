@@ -78,7 +78,29 @@ public class ExceptionMiddleware
                 ProjectNotFoundException =>
                     (StatusCodes.Status404NotFound, ex.Message),
 
+                // All four "already deleted" domain exceptions map to 409: the
+                // state of the resource forbids the change, rather than the
+                // caller lacking rights.
+                //
+                // Only the project one is reachable through the API today —
+                // every repository filters soft-deleted rows out before an
+                // entity guard can fire, so the service raises a not-found
+                // first (proved by SoftDeleteVisibilityTests, which get 404
+                // everywhere). The other three are mapped anyway: leaving them
+                // out means the first repository method written without that
+                // filter turns a domain rule into a 500, and the mapping costs
+                // three lines. ExceptionMiddlewareTests covers all four
+                // directly, which is the only place they are reachable.
                 ProjectAlreadyDeletedException =>
+                    (StatusCodes.Status409Conflict, ex.Message),
+
+                TaskAlreadyDeletedException =>
+                    (StatusCodes.Status409Conflict, ex.Message),
+
+                WorkspaceAlreadyDeletedException =>
+                    (StatusCodes.Status409Conflict, ex.Message),
+
+                WorkspaceUserAlreadyDeletedException =>
                     (StatusCodes.Status409Conflict, ex.Message),
 
                 ArgumentException =>

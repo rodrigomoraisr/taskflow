@@ -113,3 +113,12 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+/// <summary>
+/// Program is implicit with top-level statements and therefore internal, which
+/// WebApplicationFactory&lt;Program&gt; in the test assembly cannot see. Declaring
+/// the partial makes it public without adding a line of behaviour.
+/// </summary>
+public partial class Program
+{
+}

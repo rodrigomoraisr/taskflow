@@ -3,7 +3,7 @@
 Working plan. Kept in the repo so any session — mine, an AI assistant's, or a
 reviewer's — starts from the real state rather than from memory.
 
-**Status:** phase 0 and phases 1-7 complete. In phase 8 — 8.1 and 8.2 done, 8.3 next.
+**Status:** phase 0 and phases 1-7 complete. In phase 8 — 8.1, 8.2 and 8.3 done, 8.4 next.
 
 ---
 

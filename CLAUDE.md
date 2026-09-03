@@ -82,6 +82,25 @@ both through a single `WorkspaceNotFound` helper, so the two responses are
 byte-identical. A new workspace-scoped route inherits this for free by letting
 `IWorkspaceAuthorizationService` throw — do not hand-roll a 403 for a non-member.
 
+### Soft-deleted entities read as absent, not as conflicts
+
+Settled by the phase 8.3 suite, which measured it rather than assuming:
+
+- Every repository filters `IsDeleted` **before** the entity's `EnsureNotDeleted()`
+  guard can fire, so a service raises `TaskNotFoundException` /
+  `ProjectNotFoundException` first. Every operation on a soft-deleted task or
+  project therefore answers **404**, never 409 and never 500.
+- Deleting a project also hides its tasks, because the task lookup joins through
+  the active project. The task rows keep `IsDeleted = false` — this is a
+  read-filter property, not a cascade.
+
+The four `*AlreadyDeletedException` domain types are all mapped to 409 anyway.
+Three of them are currently unreachable through HTTP for the reason above, and
+that is exactly why the mapping matters: the first repository method written
+without an `IsDeleted` filter would otherwise turn a domain rule into a 500.
+`ExceptionMiddlewareTests` covers all four directly, since the middleware is the
+only place they can be reached.
+
 ## Domain entity conventions
 
 - Public properties have `private set`. Mutation happens through intention-revealing

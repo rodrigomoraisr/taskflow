@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using TaskFlow.Api.Middleware;
 using TaskFlow.Application.Common.Exceptions;
+using TaskFlow.Domain.Exceptions;
 
 namespace TaskFlow.Api.IntegrationTests.Middleware;
 
@@ -122,6 +123,38 @@ public class ExceptionMiddlewareTests
         // Assert
         Assert.Equal(StatusCodes.Status403Forbidden, statusCode);
     }
+
+    /// <summary>
+    /// All four "already deleted" domain exceptions must be 409, not 500.
+    ///
+    /// Only the project one is reachable through the API today: every
+    /// repository filters soft-deleted rows before an entity guard can fire, so
+    /// the service raises a not-found first — SoftDeleteVisibilityTests proves
+    /// that by getting 404 for every deleted-entity operation. The other three
+    /// are unreachable from HTTP, which makes this the only place they can be
+    /// tested, and the reason the test lives here rather than in the isolation
+    /// suite. Without the mapping, the first repository method written without
+    /// that filter would turn a domain rule into a 500.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(AlreadyDeletedExceptions))]
+    public async Task InvokeAsync_WhenAnEntityIsAlreadyDeleted_ShouldReturn409(
+        Exception exception)
+    {
+        // Act
+        var (statusCode, _) = await InvokeAsync(exception);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status409Conflict, statusCode);
+    }
+
+    public static TheoryData<Exception> AlreadyDeletedExceptions() =>
+    [
+        new ProjectAlreadyDeletedException(Guid.NewGuid()),
+        new TaskAlreadyDeletedException(Guid.NewGuid()),
+        new WorkspaceAlreadyDeletedException(Guid.NewGuid()),
+        new WorkspaceUserAlreadyDeletedException(Guid.NewGuid())
+    ];
 
     [Fact]
     public async Task InvokeAsync_WhenTheExceptionIsUnmapped_ShouldReturn500WithoutTheDetail()
