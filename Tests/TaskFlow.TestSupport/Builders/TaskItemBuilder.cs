@@ -121,15 +121,6 @@ public sealed class TaskItemBuilder
                 task.Complete();
                 break;
 
-            case TaskItemStatus.Blocked:
-                // TaskItem exposes no transition into Blocked, so no sequence of
-                // legal calls reaches it. Forcing it here would hide that gap;
-                // closing it is a domain change, not a test-support change.
-                throw new NotSupportedException(
-                    "TaskItem has no transition into Blocked, so the builder "
-                    + "cannot produce a blocked task. Add the transition to the "
-                    + "domain first.");
-
             default:
                 throw new ArgumentOutOfRangeException(
                     nameof(status),

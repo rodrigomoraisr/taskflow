@@ -24,7 +24,6 @@ Task statuses:
 Todo       = 1
 InProgress = 2
 Done       = 3
-Blocked    = 4 (legacy value; no Phase 7 command enters this state)
 ```
 
 Store generated IDs at collection scope:

@@ -24,8 +24,7 @@ public sealed class PostgreSqlFixture : IAsyncLifetime
     // Pinned to the same major version docker-compose.yml runs, so tests and
     // local development do not disagree about server behaviour.
     private readonly PostgreSqlContainer _container =
-        new PostgreSqlBuilder()
-            .WithImage("postgres:17")
+        new PostgreSqlBuilder("postgres:17")
             .WithDatabase("taskflow_test")
             .WithUsername("postgres")
             .WithPassword("postgres")

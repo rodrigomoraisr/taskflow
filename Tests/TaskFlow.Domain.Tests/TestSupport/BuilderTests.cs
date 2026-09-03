@@ -45,17 +45,6 @@ public class BuilderTests
     }
 
     [Fact]
-    public void TaskItemBuilder_WithBlockedStatus_ShouldThrowBecauseTheDomainHasNoSuchTransition()
-    {
-        // Arrange
-        var builder = new TaskItemBuilder()
-            .WithStatus(TaskItemStatus.Blocked);
-
-        // Act + Assert
-        Assert.Throws<NotSupportedException>(() => builder.Build());
-    }
-
-    [Fact]
     public void TaskItemBuilder_WhenAssignedAndDeleted_ShouldKeepTheAssigneeItWasGiven()
     {
         // Arrange
