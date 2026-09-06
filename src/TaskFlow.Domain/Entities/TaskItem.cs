@@ -6,9 +6,14 @@ using TaskFlow.Domain.Exceptions;
 
 public class TaskItem : BaseEntity
 {
-    private TaskItem(){}
-    public string  Title { get; private set; }
-    public string Description { get; private set; }
+    // EF Core materialises through this; the public constructor is the only
+    // way to build a TaskItem in application code. The two string defaults are
+    // what EF overwrites on load — they exist so the nullable analysis holds
+    // for the private constructor, matching how Project declares the same pair.
+    private TaskItem() { }
+
+    public string Title { get; private set; } = string.Empty;
+    public string Description { get; private set; } = string.Empty;
     public Guid WorkspaceId { get; private set; }
     public Guid ProjectId { get; private set; }
     public Guid? AssigneeUserId { get; private set; }
