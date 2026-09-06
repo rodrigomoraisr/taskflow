@@ -114,7 +114,7 @@ public class TaskService : ITaskService
     public async Task<GetTasksResponse> GetTasksAsync(
         Guid workspaceId,
         GetTasksRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken = default)
     {
         await _workspaceAuthorizationService.EnsureCanViewWorkspaceAsync(
             workspaceId,

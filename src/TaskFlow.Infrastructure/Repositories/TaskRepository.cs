@@ -52,7 +52,7 @@ public class TaskRepository : ITaskRepository
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<int> CountAsync(Guid workspaceId, CancellationToken cancellationToken)
+    public async Task<int> CountAsync(Guid workspaceId, CancellationToken cancellationToken = default)
     {
         return await _dbContext.Tasks
             .CountAsync(

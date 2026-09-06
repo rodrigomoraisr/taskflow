@@ -34,8 +34,8 @@ public class UserService : IUserService
     }
 
     public async Task<LoginResponse> LoginAsync(
-    LoginRequest request,
-    CancellationToken cancellationToken)
+        LoginRequest request,
+        CancellationToken cancellationToken = default)
     {
         string normalizedEmail = request.Email
             .Trim()
