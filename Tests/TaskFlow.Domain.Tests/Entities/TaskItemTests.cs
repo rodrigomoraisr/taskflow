@@ -224,4 +224,217 @@ public class TaskItemTests
                 TaskPriority.Medium,
                 null));
     }
+
+    [Fact]
+    public void Start_WhenTaskIsDone_ShouldThrowInvalidTaskStatusTransitionException()
+    {
+        // Arrange
+        var task = CreateTask();
+
+        task.Complete();
+
+        // Act + Assert
+        Assert.Throws<InvalidTaskStatusTransitionException>(
+            () => task.Start());
+    }
+
+    [Fact]
+    public void Complete_WhenTaskIsAlreadyDoneAfterReopen_ShouldChangeStatusToDone()
+    {
+        // Arrange
+        var task = CreateTask();
+
+        task.Complete();
+        task.Reopen();
+
+        // Act
+        task.Complete();
+
+        // Assert
+        Assert.Equal(TaskItemStatus.Done, task.Status);
+    }
+
+    [Fact]
+    public void AssignTo_WhenTaskIsAlreadyAssigned_ShouldReplaceTheAssignee()
+    {
+        // Arrange
+        var task = CreateTask();
+        var first = Guid.NewGuid();
+        var second = Guid.NewGuid();
+
+        task.AssignTo(first);
+
+        // Act
+        task.AssignTo(second);
+
+        // Assert
+        Assert.Equal(second, task.AssigneeUserId);
+    }
+
+    [Fact]
+    public void UpdateDetails_WhenTaskIsActive_ShouldReplaceEveryDetail()
+    {
+        // Arrange
+        var task = CreateTask();
+        var dueDate = new DateTime(2027, 3, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        // Act
+        task.UpdateDetails(
+            "Renamed task",
+            "Rewritten description",
+            TaskPriority.Critical,
+            dueDate);
+
+        // Assert
+        Assert.Equal("Renamed task", task.Title);
+        Assert.Equal("Rewritten description", task.Description);
+        Assert.Equal(TaskPriority.Critical, task.Priority);
+        Assert.Equal(dueDate, task.DueDate);
+        Assert.NotNull(task.UpdatedAt);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void UpdateDetails_WhenTitleIsBlank_ShouldThrowArgumentException(
+        string title)
+    {
+        // Arrange
+        var task = CreateTask();
+
+        // Act + Assert
+        Assert.Throws<ArgumentException>(
+            () => task.UpdateDetails(
+                title,
+                "Description",
+                TaskPriority.Low,
+                null));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Constructor_WhenTitleIsBlank_ShouldThrowArgumentException(
+        string title)
+    {
+        Assert.Throws<ArgumentException>(() =>
+            new TaskItem(
+                title,
+                "Description",
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                TaskPriority.Medium,
+                null));
+    }
+
+    // -----------------------------------------------------------------
+    // Guards on a soft-deleted task.
+    //
+    // One test per mutating method rather than one representative test: a
+    // single case would still pass if a later method dropped its
+    // EnsureNotDeleted call, which is exactly the regression worth catching.
+    //
+    // Every one of them expects TaskAlreadyDeletedException specifically.
+    // ExceptionMiddleware maps that type to 409 and anything it does not
+    // recognise to 500, so a guard throwing a bare InvalidOperationException
+    // would turn a stated domain rule into an unexplained server error the
+    // first time a repository forgot its IsDeleted filter.
+    // -----------------------------------------------------------------
+
+    [Fact]
+    public void AssignTo_WhenTaskIsDeleted_ShouldThrowTaskAlreadyDeletedException()
+    {
+        // Arrange
+        var task = CreateDeletedTask();
+
+        // Act + Assert
+        Assert.Throws<TaskAlreadyDeletedException>(
+            () => task.AssignTo(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public void Unassign_WhenTaskIsDeleted_ShouldThrowTaskAlreadyDeletedException()
+    {
+        // Arrange
+        var task = CreateDeletedTask();
+
+        // Act + Assert
+        Assert.Throws<TaskAlreadyDeletedException>(
+            () => task.Unassign());
+    }
+
+    [Fact]
+    public void Start_WhenTaskIsDeleted_ShouldThrowTaskAlreadyDeletedException()
+    {
+        // Arrange
+        var task = CreateDeletedTask();
+
+        // Act + Assert
+        Assert.Throws<TaskAlreadyDeletedException>(
+            () => task.Start());
+    }
+
+    [Fact]
+    public void Complete_WhenTaskIsDeleted_ShouldThrowTaskAlreadyDeletedException()
+    {
+        // Arrange
+        var task = CreateDeletedTask();
+
+        // Act + Assert
+        Assert.Throws<TaskAlreadyDeletedException>(
+            () => task.Complete());
+    }
+
+    [Fact]
+    public void Reopen_WhenTaskIsDeleted_ShouldThrowTaskAlreadyDeletedException()
+    {
+        // Arrange
+        var task = CreateDeletedTask();
+
+        // Act + Assert
+        Assert.Throws<TaskAlreadyDeletedException>(
+            () => task.Reopen());
+    }
+
+    [Fact]
+    public void UpdateDetails_WhenTaskIsDeleted_ShouldThrowTaskAlreadyDeletedException()
+    {
+        // Arrange
+        var task = CreateDeletedTask();
+
+        // Act + Assert
+        Assert.Throws<TaskAlreadyDeletedException>(
+            () => task.UpdateDetails(
+                "Renamed",
+                "Rewritten",
+                TaskPriority.Low,
+                null));
+    }
+
+    /// <summary>
+    /// The deleted guard fires before the transition check, so a deleted task
+    /// reports being deleted rather than reporting an illegal transition. The
+    /// two rules are both real; this pins which one answers first.
+    /// </summary>
+    [Fact]
+    public void Reopen_WhenTaskIsDeletedAndTheTransitionIsAlsoIllegal_ShouldReportTheDeletion()
+    {
+        // Arrange
+        var task = CreateTask();
+
+        task.Delete();
+
+        // Act + Assert
+        Assert.Throws<TaskAlreadyDeletedException>(
+            () => task.Reopen());
+    }
+
+    private static TaskItem CreateDeletedTask()
+    {
+        var task = CreateTask();
+
+        task.Delete();
+
+        return task;
+    }
 }

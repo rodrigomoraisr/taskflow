@@ -187,4 +187,34 @@ public class ProjectTests
         Assert.Throws<ProjectAlreadyDeletedException>(() =>
             project.ChangeStatus(ProjectStatus.Completed));
     }
+
+    [Fact]
+    public void Constructor_WhenCalledTwice_ShouldGiveEachProjectItsOwnId()
+    {
+        // Arrange + Act
+        var first = new Project(Guid.NewGuid(), "First", "Description");
+        var second = new Project(Guid.NewGuid(), "Second", "Description");
+
+        // Assert
+        Assert.NotEqual(Guid.Empty, first.Id);
+        Assert.NotEqual(Guid.Empty, second.Id);
+        Assert.NotEqual(first.Id, second.Id);
+    }
+
+    /// <summary>
+    /// The deleted guard fires before the blank-name check, so a deleted
+    /// project reports the deletion rather than the invalid argument.
+    /// </summary>
+    [Fact]
+    public void UpdateDetails_WhenProjectIsDeletedAndNameIsAlsoBlank_ShouldReportTheDeletion()
+    {
+        // Arrange
+        var project = new Project(Guid.NewGuid(), "Project", "Description");
+
+        project.Delete();
+
+        // Act + Assert
+        Assert.Throws<ProjectAlreadyDeletedException>(
+            () => project.UpdateDetails("   ", "Description"));
+    }
 }
