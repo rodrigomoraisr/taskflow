@@ -125,12 +125,16 @@ public class TaskItem : BaseEntity
         UpdatedAt = DateTime.UtcNow;
     }
 
+    // TaskAlreadyDeletedException, not a bare InvalidOperationException:
+    // ExceptionMiddleware maps this type to 409 and anything unrecognised to
+    // 500. The mapping exists precisely so that a repository method written
+    // without an IsDeleted filter surfaces the domain rule rather than an
+    // unexplained server error, and a guard that threw an unmapped type would
+    // hand that back. Matches how Project guards itself.
     private void EnsureNotDeleted()
     {
         if(IsDeleted)
-            throw new InvalidOperationException(
-                "Deleted tasks cannot be modified."
-            );
+            throw new TaskAlreadyDeletedException(Id);
     }
 
     public void UpdateDetails(
