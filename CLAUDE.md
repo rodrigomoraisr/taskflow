@@ -67,6 +67,19 @@ _taskAuthorizationService.EnsureCanEdit(role);
 // ... only then load or mutate anything
 ```
 
+**Check before load, and it is enforced.** Phase 8.4 audited all 21
+workspace-scoped service methods rather than assuming: every one refuses a
+non-member before touching a repository, and fifteen of the sixteen role-gated
+methods do the same for a role that is too low. `CheckBeforeLoadTests` arms every
+repository read to throw and asserts the authorization exception surfaces
+instead. A new workspace-scoped method adds one line to its theory data.
+
+The single exception is `TaskService.AssignAsync`, which loads the task before
+calling `EnsureCanAssign` because the rule it enforces reads
+`task.AssigneeUserId` — the entity is an argument to the decision. That is
+recorded in `docs/adr/0002` with a test that asserts it, not tolerated silently.
+The membership gate still runs first there, as everywhere.
+
 ### 403 versus 404
 
 Settled, and every tenant-isolation test asserts it:
@@ -100,6 +113,14 @@ that is exactly why the mapping matters: the first repository method written
 without an `IsDeleted` filter would otherwise turn a domain rule into a 500.
 `ExceptionMiddlewareTests` covers all four directly, since the middleware is the
 only place they can be reached.
+
+For that safety net to work, **an entity's `EnsureNotDeleted()` guard has to
+throw its own mapped type.** `TaskItem` threw a bare `InvalidOperationException`
+until phase 8.4 — mapped nowhere, so it would have produced the 500 the mapping
+exists to prevent, and only `Delete()` raised `TaskAlreadyDeletedException` at
+all. Fixed, and now covered by one test per mutating method rather than one
+representative test, since a single case would still pass if a later method
+dropped its guard.
 
 ## Domain entity conventions
 
@@ -152,9 +173,27 @@ roadmap; if you touch it, adding `ILogger` is welcome.
 - Arrange / Act / Assert, in that order, with blank lines between.
 - `[Theory]` with `[InlineData]` for boundary sets rather than several near-identical
   `[Fact]`s.
-- **Do not mock the thing under test.** In Application tests, mock the repositories;
-  do *not* mock `IWorkspaceAuthorizationService` or `ITaskAuthorizationService` —
-  those are the behaviour being verified.
+- **Mock repositories, never the authorization services.** In Application tests
+  the repositories, `IUnitOfWork` and `ICurrentUser` are NSubstitute doubles;
+  `WorkspaceAuthorizationService` and `TaskAuthorizationService` are the real
+  types. Substituting them would let every role and tenant assertion pass against
+  an authorization service that returned `Owner` for everyone. Arrange a caller's
+  role by seeding the membership row the real service looks up —
+  `ServiceTestContext.AsRole(...)` does this.
+- **Assert the refusal paths do not commit.** Every test of a rejected call also
+  asserts `IUnitOfWork.SaveChangesAsync` was never called
+  (`ServiceTestContext.ShouldNotHaveCommittedAsync`). A method that mutates an
+  entity and only then throws leaves the change tracker dirty, and the next
+  commit in the same scope persists exactly what the refusal was meant to
+  prevent.
+- **Repository tenant filters get direct tests**, in
+  `Tests/TaskFlow.Api.IntegrationTests/Repositories/`, against a real database
+  with no service layer above them. Reaching a repository only through a route
+  does not exercise its `workspaceId` predicate: almost every cross-tenant
+  request stops at the membership gate first. Both shapes are needed — the
+  direct one, and the "legitimate member, own workspace in the route, foreign
+  entity id" shape in `TaskLookupTenantScopeTests`, which is the only HTTP path
+  that reaches the filter.
 - Integration tests use a real PostgreSQL via Testcontainers, not an in-memory
   provider. The in-memory provider does not enforce constraints and would let a
   tenant-isolation bug pass.
@@ -196,6 +235,10 @@ If a proposed change does any of these, say so rather than doing it:
 - Adds a package reference to `TaskFlow.Domain`.
 - Exposes `DbContext` or `IQueryable` above the Infrastructure layer.
 - Adds a repository query on a tenant-owned entity without a `workspaceId` filter.
+- Writes a service method that loads an entity before it authorizes the caller.
+  See `docs/adr/0002` — the one accepted exception is documented there.
+- Mocks `IWorkspaceAuthorizationService` or `ITaskAuthorizationService` in an
+  Application test.
 - Adds a workspace or role claim to the JWT.
 - Introduces a settable `Status` property or otherwise bypasses a state transition
   method.

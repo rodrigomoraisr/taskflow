@@ -3,7 +3,7 @@
 Working plan. Kept in the repo so any session — mine, an AI assistant's, or a
 reviewer's — starts from the real state rather than from memory.
 
-**Status:** phase 0 and phases 1-7 complete. In phase 8 — 8.1, 8.2 and 8.3 done, 8.4 next.
+**Status:** phase 0 and phases 1-7 complete. In phase 8 — 8.1 through 8.5 done (8.5 folded into 8.4), 8.6 next.
 
 ---
 
@@ -44,8 +44,8 @@ test comes early rather than sixth.
 | 8.1 | Test infrastructure | Shared fixtures, builders for `TaskItem` / `Project` / `WorkspaceUser`. Remove placeholder tests. |
 | 8.2 | PostgreSQL integration infrastructure | **Testcontainers**, not the in-memory provider — the in-memory provider does not enforce constraints and would let an isolation bug pass. Respawn to reset state between tests. |
 | 8.3 | **Tenant / security regression suite** | The most valuable work in this entire roadmap. See below. |
-| 8.4 | Application-layer tests | Mock repositories; **do not** mock the authorization services — those are what's under test. |
-| 8.5 | Domain tests — fill the gaps | 38 exist. Audit for uncovered transitions and the last-owner rule. |
+| 8.4 | Application-layer and repository tests | ☑ Done. Mock repositories; **do not** mock the authorization services — those are what's under test. See below. |
+| 8.5 | Domain tests — fill the gaps | ☑ Done, folded into 8.4 as its group 4. |
 | 8.6 | API integration tests | End-to-end through the real HTTP pipeline: register → login → create workspace → create project → create task → transition it. |
 | 8.7 | Full suite green, CI wired | `dotnet test` clean, running in the workflow from 0.3. |
 
@@ -67,6 +67,34 @@ The suite should prove, at minimum:
 - A soft-deleted entity is invisible to reads and rejects writes.
 
 Each of these is a named test. When one fails, the name says what broke.
+
+### What 8.4 found
+
+Three layers were guarded by 22, 0 and 1 tests respectively before it started.
+The suite went from 144 tests to 351, and the measurements that drove it are
+worth keeping:
+
+- **The repository tenant filter was the thin layer, and the reason was the
+  route, not the repository.** Dropping the `workspaceId` predicate from
+  `TaskRepository.GetByIdAsync` turned one test red, because every cross-tenant
+  scenario in 8.3 stopped at the membership gate first. The shape that reaches
+  the filter is a *legitimate member* using their own workspace id in the route
+  with a foreign entity id in the path, and only the GET route had that test.
+  Adding it for the other seven routes, plus direct repository tests, takes the
+  same break to **10** red.
+- **`CountAsync` and `GetPagedAsync` do apply the same filters**, but as two
+  separately written expressions with no shared query builder. They are now
+  asserted against each other rather than separately, so a divergence that would
+  make the pager promise rows it will never show fails a test that names it.
+- **`CountActiveOwnersAsync` is correctly scoped to one workspace.** The
+  last-owner rule depends on it entirely, so it now has direct tests.
+- **Check-before-load holds.** All 21 workspace-scoped methods refuse a
+  non-member before reading; 15 of the 16 role-gated ones also refuse a
+  too-low role before reading. The
+  exception is `TaskService.AssignAsync`, and it is structural. Recorded in
+  `docs/adr/0002`.
+- **`TaskItem`'s deleted guard threw an unmapped exception type**, which would
+  have produced a 500 rather than the 409 the middleware is set up for. Fixed.
 
 ### Moved out of phase 8
 

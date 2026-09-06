@@ -38,7 +38,8 @@ dotnet run
 OpenAPI is exposed at `/openapi/v1.json` in Development.
 
 ```bash
-# Tests
+# Tests — 351 of them; the integration suite starts a PostgreSQL container,
+# so Docker must be running.
 dotnet test
 ```
 
@@ -142,6 +143,16 @@ answer costs nothing. The two cases stay distinct inside the application
 (`UnauthorizedWorkspaceAccessException` versus `InsufficientWorkspaceRoleException`)
 and are collapsed at the HTTP boundary in `ExceptionMiddleware`.
 
+**Authorization happens before anything is loaded.** A method that loads the
+entity and then checks permission returns exactly the same response as one that
+checks first, so no test going through HTTP can tell them apart — which is why
+the ordering drifts. It matters anyway: loading first fetches a row on behalf of
+someone with no right to it, and makes the cost of a refusal depend on whether
+the row exists, which is a timing signal sitting behind a 404 that is otherwise
+careful to say nothing. Audited across all 21 workspace-scoped service methods
+in [`docs/adr/0002`](docs/adr/0002-check-before-load.md), with the single
+structural exception documented there rather than quietly tolerated.
+
 **Status transitions are methods, not a settable property.** `task.Status = Done`
 would let a caller skip validation. `task.Complete()` cannot — it checks the current
 state and throws `InvalidTaskStatusTransitionException` if the move is illegal. The
@@ -162,6 +173,37 @@ The middleware maps both to status codes, but the layering stays honest.
 
 **`CancellationToken` threaded end to end.** Every async method takes one and passes
 it down. A client that disconnects should not leave a query running.
+
+---
+
+## Tests
+
+351 tests across three projects, mirroring the layers.
+
+| Project | Count | What it covers |
+| --- | --- | --- |
+| `TaskFlow.Domain.Tests` | 100 | Entity invariants, every status transition, guards on soft-deleted entities — one test per mutating method rather than one representative test |
+| `TaskFlow.Application.Tests` | 115 | Service orchestration with substituted repositories and the **real** authorization services, plus the check-before-load audit |
+| `TaskFlow.Api.IntegrationTests` | 136 | The tenant regression suite over real HTTP, repository tenant filters against a real database, and the database's own constraints |
+
+Integration tests run against PostgreSQL in Testcontainers, not the in-memory
+provider — the in-memory provider does not enforce constraints, so a tenant
+isolation bug the database would reject could pass in memory.
+
+**The authorization services are never substituted.** Repositories,
+`IUnitOfWork` and `ICurrentUser` are, but `WorkspaceAuthorizationService` and
+`TaskAuthorizationService` are the real types in every test. Substituting them
+would leave every role and tenant assertion passing against an authorization
+service that returned `Owner` for everyone.
+
+**Each suite is checked for its ability to fail.** A passing test proves nothing
+about its strength, so the invariants are deliberately broken and the resulting
+failures counted — the tables in [`docs/adr/0001`](docs/adr/0001-tenant-boundary-responses.md)
+and [`docs/adr/0002`](docs/adr/0002-check-before-load.md) record which breaks
+turn which tests red, and why the count matters. That exercise is what found the
+real gap in the previous suite: the repository's `workspaceId` filter was
+load-bearing and guarded by a single test, because every other cross-tenant
+scenario was caught earlier by the membership check.
 
 ---
 
@@ -193,7 +235,8 @@ These are decisions, not omissions.
   most obvious hole in the current auth surface.
 - **Structured logging and health checks.** There is no `ILogger` usage yet, which
   means an unexpected 500 currently leaves no trace. This is the next thing worth
-  fixing.
+  fixing — and the one place the 404 in ADR 0001 costs something, since "not a
+  member" and "does not exist" are indistinguishable server-side too.
 - **Optimistic concurrency.** Two simultaneous writes to the same task will
   last-write-win. The fix is a `rowversion` column and handling the concurrency
   exception; the current model tolerates the race because nothing depends on a
@@ -209,9 +252,9 @@ These are decisions, not omissions.
 
 The working plan is in [`docs/ROADMAP.md`](docs/ROADMAP.md). The immediate queue:
 
-1. Application-layer and API integration tests, including a tenant-isolation
-   regression suite — the invariant this project cares most about currently has no
-   test proving it holds.
+1. End-to-end API tests through the full HTTP pipeline: register → login →
+   create workspace → create project → create task → transition it. The suites
+   below it are in place; this is the happy path they do not cover.
 2. `ILogger` in the exception middleware and RFC 7807 `ProblemDetails` responses in
    place of the current ad-hoc error shape.
 3. Refresh tokens, logout, and rate limiting on the auth endpoints.
