@@ -1,4 +1,4 @@
-namespace TaskFlow.Application.Exceptions;
+namespace TaskFlow.Application.Common.Exceptions;
 
 public sealed class TaskNotFoundException : Exception
 {

@@ -1,5 +1,4 @@
 using TaskFlow.Application.Common.Exceptions;
-using TaskFlow.Application.Exceptions;
 using TaskFlow.Domain.Exceptions;
 
 namespace TaskFlow.Api.Middleware;
