@@ -23,6 +23,7 @@ public class User : BaseEntity
             throw new ArgumentException(
                 "Password hash is required.");
 
+        Id = Guid.NewGuid();
         Email = email;
         PasswordHash = passwordHash;
         CreatedAt = DateTime.UtcNow;

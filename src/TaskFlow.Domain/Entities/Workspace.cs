@@ -19,6 +19,7 @@ public class Workspace : BaseEntity
             throw new ArgumentException(
                 "Workspace name is required.");
 
+        Id = Guid.NewGuid();
         Name = name.Trim();
         CreatedAt = DateTime.UtcNow;
     }

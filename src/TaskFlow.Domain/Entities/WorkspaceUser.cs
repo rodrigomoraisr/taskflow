@@ -32,6 +32,7 @@ public class WorkspaceUser : BaseEntity
             throw new ArgumentException(
                 "WorkspaceId is required.");
 
+        Id = Guid.NewGuid();
         UserId = userId;
         WorkspaceId = workspaceId;
         Role = role;
