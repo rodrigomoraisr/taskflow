@@ -3,7 +3,7 @@
 Working plan. Kept in the repo so any session — mine, an AI assistant's, or a
 reviewer's — starts from the real state rather than from memory.
 
-**Status:** phase 0 and phases 1-8 complete. Phase 9 next. Phase 8 closed with 353 passing tests in a local Release run; the existing CI workflow runs the suite on main pushes and pull requests. Remote CI for the closing commit remains to be verified after push.
+**Status:** phase 0 and phases 1-9 complete locally. Phase 10 next. Phase 8 remote CI passed on commit `6c54d24`. Phase 9 closes with 410 passing Release tests; remote CI for the Phase 9 commit is pending push.
 
 ---
 
@@ -47,7 +47,7 @@ test comes early rather than sixth.
 | 8.4 | Application-layer and repository tests | ☑ Done. Mock repositories; **do not** mock the authorization services — those are what's under test. See below. |
 | 8.5 | Domain tests — fill the gaps | ☑ Done, folded into 8.4 as its group 4. |
 | 8.6 | API integration tests | ☑ Done. Register → login → create workspace → create project → create task → start → complete → reopen. API and database assertions after each transition, plus a rejected-transition persistence check. |
-| 8.7 | Full suite green, CI wired | ☑ Done locally: `dotnet test --configuration Release --verbosity quiet` — 353 passed, 0 failed, 0 skipped on 2026-09-07. Existing workflow includes Release build/test and test-result artifacts; remote run pending push. |
+| 8.7 | Full suite green, CI wired | ☑ Done locally: `dotnet test --configuration Release --verbosity quiet` — 353 passed, 0 failed, 0 skipped on 2026-09-07. Existing workflow includes Release build/test and test-result artifacts. [Remote CI passed](https://github.com/rodrigomoraisr/taskflow/actions/runs/34140065601) for `6c54d24`. |
 
 ### Why 8.3 comes third
 
@@ -107,13 +107,21 @@ three. Moved to phase 12.
 
 ## Phase 9 — Comments & activity
 
-Collaboration surface and an audit trail.
+**Complete locally on 2026-09-07.** Scope and tradeoffs: [ADR 0003](adr/0003-comments-and-task-activity.md).
 
-- `Comment` entity scoped to a task, soft-deleted, author-owned.
-- Activity log: who changed what, when. Append-only.
-- Decide early whether activity is derived from domain events or written explicitly
-  by the services. Explicit is simpler and honest; events are the better story if
-  the plumbing stays small.
+- ☑ Author-owned comments: create/read/edit/soft-delete, 2,000-character limit.
+- ☑ Member/Admin/Owner may comment; Viewer reads only; no admin ownership override.
+- ☑ Task/comment activity written explicitly in application services in the same
+  unit-of-work save as the business change. No event bus introduced.
+- ☑ Paginated comments and workspace task-activity feed with optional task filter.
+- ☑ Tenant/parent filters and composite FKs; history retained after task deletion.
+- ☑ Domain, service, HTTP and PostgreSQL tests, including rollback and append-only
+  persistence checks. 410 tests pass: 119 Domain, 135 Application, 156 integration.
+- ☑ ADR 0002 extended for ownership checks; README and working notes updated.
+
+History starts at deployment; existing tasks are not backfilled. Comment content
+is not copied into activity. Append-only enforcement covers the application and
+tracked EF saves, not privileged SQL. Concurrency remains in Phase 12.
 
 ## Phase 10 — Querying, filtering & sorting
 

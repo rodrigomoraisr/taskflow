@@ -32,6 +32,15 @@ namespace TaskFlow.Application.Tests.TestSupport;
 /// </summary>
 public sealed class ServiceTestContext
 {
+    public ITaskActivityRepository Activities { get; } = Substitute.For<ITaskActivityRepository>();
+    public ICommentRepository Comments { get; } = Substitute.For<ICommentRepository>();
+
+    public TaskFlow.Application.Comments.CommentService CreateCommentService() =>
+        new(WorkspaceAuthorization, TaskAuthorization, Tasks, Comments, Activities, CurrentUser, UnitOfWork);
+
+    public TaskFlow.Application.Activity.ActivityService CreateActivityService() =>
+        new(WorkspaceAuthorization, Activities);
+
     public ITaskRepository Tasks { get; } = Substitute.For<ITaskRepository>();
 
     public IProjectRepository Projects { get; } =
@@ -201,7 +210,8 @@ public sealed class ServiceTestContext
             TaskAuthorization,
             WorkspaceUsers,
             CurrentUser,
-            UnitOfWork);
+            UnitOfWork,
+            Activities);
     }
 
     public ProjectService CreateProjectService()
@@ -237,6 +247,9 @@ public sealed class ServiceTestContext
     public ServiceTestContext MakeEveryReadThrow()
     {
         var reached = new RepositoryReachedException();
+        Comments.GetByIdAsync(default, default, default, default).ThrowsAsyncForAnyArgs(reached);
+        Comments.GetPagedAsync(default, default, default, default, default).ThrowsAsyncForAnyArgs(reached);
+        Activities.GetPagedAsync(default, default, default, default, default).ThrowsAsyncForAnyArgs(reached);
 
         Tasks.GetByIdAsync(default, default, default).ThrowsAsyncForAnyArgs(reached);
         Tasks.GetPagedAsync(default, default, default, default).ThrowsAsyncForAnyArgs(reached);

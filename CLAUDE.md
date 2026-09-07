@@ -245,3 +245,26 @@ If a proposed change does any of these, say so rather than doing it:
 - Adds an abstraction with exactly one implementation and no test that needs the
   seam.
 - Uses `DateTime.Now` instead of `DateTime.UtcNow`.
+
+## Phase 9 — Comments and task activity
+
+Read `docs/adr/0003-comments-and-task-activity.md` before changing collaboration.
+Members/Admins/Owners may comment; only authors may edit/delete their comments.
+Viewers can read only. Membership and role gates precede reads; ownership is
+checked after the scoped comment load, before mutation (ADR 0002 extension).
+
+Comment bodies are trimmed and limited to 2,000 characters. Comments are soft-deleted
+and hidden if their task/project is deleted. Repositories enforce workspace and
+parent-task filters; composite foreign keys enforce parent alignment in PostgreSQL.
+
+Services append activity explicitly before the same `SaveChangesAsync` as the
+business change. New task mutation paths must add activity there, not after the
+commit. Do not introduce a second save or mock away activity assertions in tests.
+Task activity carries before/after business snapshots; comment activity carries
+only comment IDs/actions, never body copies. Unchanged task snapshots do not log.
+The workspace activity feed retains deleted-task/project history for active members.
+
+Activity has no mutation API and the DbContext refuses tracked modifications or
+removals. This is an application guarantee, not protection against privileged SQL.
+The ordering audit now covers 27 workspace-scoped methods (the earlier 21-method
+figures above describe the Phase 8.4 measurement).

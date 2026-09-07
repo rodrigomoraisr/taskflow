@@ -24,6 +24,10 @@ public class ExceptionMiddleware
         {
             var (statusCode, message) = ex switch
             {
+                CommentNotFoundException => (StatusCodes.Status404NotFound, ex.Message),
+                CommentOwnershipException => (StatusCodes.Status403Forbidden, ex.Message),
+                CommentAlreadyDeletedException => (StatusCodes.Status409Conflict, ex.Message),
+
                 TaskNotFoundException =>
                     (StatusCodes.Status404NotFound, ex.Message),
 

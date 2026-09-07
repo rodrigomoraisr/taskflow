@@ -82,6 +82,22 @@ This is recorded as an accepted exception rather than silently tolerated.
 asserts the current behaviour, so if the rule ever stops needing the entity, that
 test fails and points at this decision.
 
+## Phase 9 extension — comment ownership
+
+`CommentService.EditAsync` and `DeleteAsync` check active workspace membership
+and the non-Viewer role before any task/comment lookup. After those gates, they
+load the comment by `(id, taskId, workspaceId)` and compare its `AuthorId` with the
+current user. Ownership cannot be decided before loading the entity; no mutation
+or activity append happens before that comparison succeeds.
+
+This is an additional entity-dependent check, not an exception to membership or
+role ordering. `CommentServiceTests` covers successful author edits/deletes and
+rejections for non-authors at every write-capable role. The shared ordering audit
+now includes all 27 workspace-scoped methods and all 18 role-before-load cases
+(the existing `AssignAsync` exception remains separate).
+
+See [ADR 0003](0003-comments-and-task-activity.md) for the full collaboration policy.
+
 ## Consequences
 
 **Obligations this creates**

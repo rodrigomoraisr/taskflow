@@ -17,6 +17,9 @@ using TaskFlow.Api.Security;
 using TaskFlow.Application.Common.Authorization;
 using TaskFlow.Application.Projects;
 
+using TaskFlow.Application.Comments;
+using TaskFlow.Application.Activity;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -28,6 +31,11 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddScoped<IWorkspaceAuthorizationService, WorkspaceAuthorizationService>();
 builder.Services.AddScoped<ITaskAuthorizationService, TaskAuthorizationService>();
+
+builder.Services.AddScoped<ICommentRepository, CommentRepository>();
+builder.Services.AddScoped<ITaskActivityRepository, TaskActivityRepository>();
+builder.Services.AddScoped<ICommentService, CommentService>();
+builder.Services.AddScoped<IActivityService, ActivityService>();
 
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<ITaskService, TaskService>();

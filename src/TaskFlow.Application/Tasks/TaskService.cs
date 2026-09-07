@@ -1,3 +1,5 @@
+using System.Text.Json;
+using TaskFlow.Domain.Enums;
 using TaskFlow.Application.Common;
 using TaskFlow.Domain.Entities;
 using TaskFlow.Application.Common.Interfaces;
@@ -7,6 +9,7 @@ namespace TaskFlow.Application.Tasks;
 
 public class TaskService : ITaskService
 {
+    private readonly ITaskActivityRepository _activities;
     private readonly ITaskRepository _taskRepository;
     private readonly IWorkspaceAuthorizationService _workspaceAuthorizationService;
     private readonly IProjectRepository _projectRepository;
@@ -22,8 +25,10 @@ public class TaskService : ITaskService
         ITaskAuthorizationService taskAuthorizationService,
         IWorkspaceUserRepository workspaceUserRepository,
         ICurrentUser currentUser,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        ITaskActivityRepository activities)
     {
+        _activities = activities;
         _taskRepository = taskRepository;
         _workspaceAuthorizationService = workspaceAuthorizationService;
         _projectRepository = projectRepository;
@@ -67,9 +72,7 @@ public class TaskService : ITaskService
             cancellationToken
         );
 
-        await _unitOfWork.SaveChangesAsync(
-            cancellationToken
-        );
+        await RecordAndSaveAsync(task, TaskActivityAction.TaskCreated, null, cancellationToken);
 
         return new CreateTaskResponse
         {
@@ -171,14 +174,14 @@ public class TaskService : ITaskService
         if (task is null)
             throw new TaskNotFoundException(id);
 
+        var before = Snapshot(task);
         task.UpdateDetails(
             request.Title,
             request.Description,
             request.Priority,
             request.DueDate);
 
-        await _unitOfWork.SaveChangesAsync(
-            cancellationToken);
+        await RecordAndSaveAsync(task, TaskActivityAction.TaskUpdated, before, cancellationToken);
     }
 
     public async Task DeleteAsync(
@@ -200,10 +203,10 @@ public class TaskService : ITaskService
         if (task is null)
             throw new TaskNotFoundException(id);
 
+        var before = Snapshot(task);
         task.Delete();
 
-        await _unitOfWork.SaveChangesAsync(
-            cancellationToken);
+        await RecordAndSaveAsync(task, TaskActivityAction.TaskDeleted, before, cancellationToken);
     }
 
     public async Task StartAsync(
@@ -216,8 +219,9 @@ public class TaskService : ITaskService
             id,
             cancellationToken);
 
+        var before = Snapshot(task);
         task.Start();
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await RecordAndSaveAsync(task, TaskActivityAction.TaskStarted, before, cancellationToken);
     }
 
     public async Task CompleteAsync(
@@ -230,8 +234,9 @@ public class TaskService : ITaskService
             id,
             cancellationToken);
 
+        var before = Snapshot(task);
         task.Complete();
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await RecordAndSaveAsync(task, TaskActivityAction.TaskCompleted, before, cancellationToken);
     }
 
     public async Task ReopenAsync(
@@ -244,8 +249,9 @@ public class TaskService : ITaskService
             id,
             cancellationToken);
 
+        var before = Snapshot(task);
         task.Reopen();
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await RecordAndSaveAsync(task, TaskActivityAction.TaskReopened, before, cancellationToken);
     }
 
     public async Task AssignAsync(
@@ -281,8 +287,9 @@ public class TaskService : ITaskService
         if (assigneeMembership is null)
             throw new WorkspaceMemberNotFoundException(userId);
 
+        var before = Snapshot(task);
         task.AssignTo(userId);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await RecordAndSaveAsync(task, TaskActivityAction.TaskAssigned, before, cancellationToken);
     }
 
     public async Task UnassignAsync(
@@ -301,9 +308,34 @@ public class TaskService : ITaskService
             id,
             cancellationToken);
 
+        var before = Snapshot(task);
         task.Unassign();
+        await RecordAndSaveAsync(task, TaskActivityAction.TaskUnassigned, before, cancellationToken);
+    }
+
+    private async Task RecordAndSaveAsync(TaskItem task, TaskActivityAction action,
+        string? before, CancellationToken cancellationToken)
+    {
+        var after = Snapshot(task);
+        // Idempotent operations that change nothing should not invent history.
+        if (before != after)
+        {
+            var details = JsonSerializer.Serialize(new
+            {
+                Before = before is null ? (JsonElement?)null : JsonSerializer.Deserialize<JsonElement>(before),
+                After = JsonSerializer.Deserialize<JsonElement>(after)
+            });
+            await _activities.AddAsync(new TaskActivity(task.WorkspaceId, task.Id,
+                _currentUser.UserId, action, details), cancellationToken);
+        }
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
+
+    private static string Snapshot(TaskItem task) => JsonSerializer.Serialize(new
+    {
+        task.Title, task.Description, task.Priority, task.DueDate,
+        task.Status, task.AssigneeUserId, task.IsDeleted
+    });
 
     private async Task<TaskItem> GetTaskForStatusChangeAsync(
         Guid workspaceId,

@@ -38,7 +38,7 @@ dotnet run
 OpenAPI is exposed at `/openapi/v1.json` in Development.
 
 ```bash
-# Tests — 353 of them; the integration suite starts a PostgreSQL container,
+# Tests — 410 of them; the integration suite starts a PostgreSQL container,
 # so Docker must be running.
 dotnet test
 ```
@@ -75,6 +75,8 @@ TaskFlow.Infrastructure  EF Core DbContext, entity configurations,
 | `Workspace` | The tenant boundary. Soft-deleted. |
 | `WorkspaceUser` | Membership join with a `WorkspaceRole`. Last owner cannot be removed or demoted. |
 | `Project` | Belongs to exactly one workspace. Soft-deleted. |
+| `Comment` | Author-owned task discussion, soft-deleted, maximum 2,000 characters. |
+| `TaskActivity` | Append-only task/comment history with actor and timestamp. |
 | `TaskItem` | Belongs to a workspace and a project. Status transitions are enforced, not assigned. |
 
 Entities have private setters and a private parameterless constructor for EF Core.
@@ -116,6 +118,30 @@ POST   /api/workspaces/{workspaceId}/tasks/{id}/reopen
 PUT    /api/workspaces/{workspaceId}/tasks/{id}/assignee
 DELETE /api/workspaces/{workspaceId}/tasks/{id}/assignee
 ```
+
+Comments and task activity:
+
+```text
+POST   /api/workspaces/{workspaceId}/tasks/{taskId}/comments
+GET    /api/workspaces/{workspaceId}/tasks/{taskId}/comments?page=1&pageSize=20
+GET    /api/workspaces/{workspaceId}/tasks/{taskId}/comments/{id}
+PUT    /api/workspaces/{workspaceId}/tasks/{taskId}/comments/{id}
+DELETE /api/workspaces/{workspaceId}/tasks/{taskId}/comments/{id}
+GET    /api/workspaces/{workspaceId}/activity?taskId={taskId}&page=1&pageSize=20
+```
+
+Comment create/edit bodies use `{ "body": "Ready for review" }`. Members, Admins
+and Owners may create comments, but only the author may edit/delete one; Viewers
+can read. Comment lists are oldest first, activity newest first; both return arrays
+and cap page size at 100. `taskId` is optional on the workspace activity feed.
+Activity `details` is a JSON-encoded string containing task before/after snapshots;
+comment entries use an empty object and a comment ID, without copying comment text.
+
+Task changes and activity entries commit together. History retains deleted tasks,
+while their comments become inaccessible. Existing tasks have no fabricated history:
+recording begins when the feature is deployed. Apply the new EF migration before
+running the updated API. See [ADR 0003](docs/adr/0003-comments-and-task-activity.md)
+for authorization, transaction, retention and append-only guarantees.
 
 Everything except `/auth/*` requires a bearer token.
 
@@ -178,13 +204,13 @@ it down. A client that disconnects should not leave a query running.
 
 ## Tests
 
-353 tests across three projects, mirroring the layers.
+410 tests across three projects, mirroring the layers.
 
 | Project | Count | What it covers |
 | --- | --- | --- |
-| `TaskFlow.Domain.Tests` | 100 | Entity invariants, every status transition, guards on soft-deleted entities — one test per mutating method rather than one representative test |
-| `TaskFlow.Application.Tests` | 115 | Service orchestration with substituted repositories and the **real** authorization services, plus the check-before-load audit |
-| `TaskFlow.Api.IntegrationTests` | 138 | The tenant regression suite over real HTTP, repository tenant filters, database constraints, and the registration-to-task-lifecycle journey |
+| `TaskFlow.Domain.Tests` | 119 | Entity invariants, every status transition, guards on soft-deleted entities — one test per mutating method rather than one representative test |
+| `TaskFlow.Application.Tests` | 135 | Service orchestration with substituted repositories and the **real** authorization services, plus the check-before-load audit |
+| `TaskFlow.Api.IntegrationTests` | 156 | The tenant regression suite over real HTTP, repository tenant filters, database constraints, the registration-to-task-lifecycle journey, comments and transactional activity |
 
 The lifecycle journey registers and logs in a user, creates a new workspace,
 project and task, then starts, completes and reopens the task. Each transition
@@ -243,14 +269,13 @@ These are decisions, not omissions.
   means an unexpected 500 currently leaves no trace. This is the next thing worth
   fixing — and the one place the 404 in ADR 0001 costs something, since "not a
   member" and "does not exist" are indistinguishable server-side too.
-- **Optimistic concurrency.** Two simultaneous writes to the same task will
-  last-write-win. The fix is a `rowversion` column and handling the concurrency
-  exception; the current model tolerates the race because nothing depends on a
-  read-modify-write sequence.
+- **Optimistic concurrency.** Simultaneous task or comment edits currently use
+  last-write-wins behavior. A concurrency token and conflict handling are planned
+  for Phase 12; activity snapshots do not provide concurrency protection.
 - **A frontend.** This is an API. The HTTP collection in
   `src/TaskFlow.Api/TaskFlow.Api.http` and the notes in `docs/` are how it gets
   exercised by hand.
-- **Comments, activity feeds, search, file attachments.** Scope, not difficulty.
+- **Search and file attachments.** Outside the current scope.
 
 ---
 
@@ -258,13 +283,10 @@ These are decisions, not omissions.
 
 The working plan is in [`docs/ROADMAP.md`](docs/ROADMAP.md). The immediate queue:
 
-1. End-to-end API tests through the full HTTP pipeline: register → login →
-   create workspace → create project → create task → transition it. The suites
-   below it are in place; this is the happy path they do not cover.
-2. `ILogger` in the exception middleware and RFC 7807 `ProblemDetails` responses in
-   place of the current ad-hoc error shape.
-3. Refresh tokens, logout, and rate limiting on the auth endpoints.
-4. Health checks, a `Dockerfile` for the API, and a deployable compose file.
+1. Phase 10: task filtering and sorting, with an allow-list of sortable fields.
+2. Phase 11: refresh tokens, logout, and authentication rate limiting.
+3. Phase 12: logging, `ProblemDetails`, health checks and optimistic concurrency.
+4. Phases 13–14: containerize the API and add deployment.
 
 ---
 

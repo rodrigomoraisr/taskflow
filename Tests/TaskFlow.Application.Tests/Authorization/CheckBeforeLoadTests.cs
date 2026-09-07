@@ -35,6 +35,12 @@ public sealed class CheckBeforeLoadTests
     {
         return new TheoryData<string, Func<ServiceTestContext, Task>>
         {
+            { "CommentService.CreateAsync", c => c.CreateCommentService().CreateAsync(c.WorkspaceId, Guid.NewGuid(), new TaskFlow.Application.Comments.WriteCommentRequest { Body = "hello" }) },
+            { "CommentService.GetByIdAsync", c => c.CreateCommentService().GetByIdAsync(c.WorkspaceId, Guid.NewGuid(), Guid.NewGuid()) },
+            { "CommentService.GetPagedAsync", c => c.CreateCommentService().GetPagedAsync(c.WorkspaceId, Guid.NewGuid(), new TaskFlow.Application.Comments.GetCommentsRequest()) },
+            { "CommentService.EditAsync", c => c.CreateCommentService().EditAsync(c.WorkspaceId, Guid.NewGuid(), Guid.NewGuid(), new TaskFlow.Application.Comments.WriteCommentRequest { Body = "hello" }) },
+            { "CommentService.DeleteAsync", c => c.CreateCommentService().DeleteAsync(c.WorkspaceId, Guid.NewGuid(), Guid.NewGuid()) },
+            { "ActivityService.GetPagedAsync", c => c.CreateActivityService().GetPagedAsync(c.WorkspaceId, new TaskFlow.Application.Activity.GetActivityRequest()) },
             { "TaskService.CreateAsync", c => c.CreateTaskService().CreateAsync(
                 c.WorkspaceId,
                 new CreateTaskRequest
@@ -148,6 +154,8 @@ public sealed class CheckBeforeLoadTests
             exception,
             exactMatch: false);
 
+        await context.ShouldNotHaveCommittedAsync();
+
         Assert.False(
             exception is RepositoryReachedException,
             $"{method} read from a repository before establishing membership.");
@@ -161,6 +169,9 @@ public sealed class CheckBeforeLoadTests
     {
         return new TheoryData<string, WorkspaceRole, Func<ServiceTestContext, Task>>
         {
+            { "CommentService.CreateAsync", WorkspaceRole.Viewer, c => c.CreateCommentService().CreateAsync(c.WorkspaceId, Guid.NewGuid(), new TaskFlow.Application.Comments.WriteCommentRequest { Body = "hello" }) },
+            { "CommentService.EditAsync", WorkspaceRole.Viewer, c => c.CreateCommentService().EditAsync(c.WorkspaceId, Guid.NewGuid(), Guid.NewGuid(), new TaskFlow.Application.Comments.WriteCommentRequest { Body = "hello" }) },
+            { "CommentService.DeleteAsync", WorkspaceRole.Viewer, c => c.CreateCommentService().DeleteAsync(c.WorkspaceId, Guid.NewGuid(), Guid.NewGuid()) },
             { "TaskService.CreateAsync", WorkspaceRole.Viewer, c => c.CreateTaskService().CreateAsync(
                 c.WorkspaceId,
                 new CreateTaskRequest
@@ -252,6 +263,8 @@ public sealed class CheckBeforeLoadTests
 
         // Act + Assert
         var exception = await Record.ExceptionAsync(() => call(context));
+
+        await context.ShouldNotHaveCommittedAsync();
 
         Assert.False(
             exception is RepositoryReachedException,

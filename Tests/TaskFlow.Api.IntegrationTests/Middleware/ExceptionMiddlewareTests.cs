@@ -125,7 +125,7 @@ public class ExceptionMiddlewareTests
     }
 
     /// <summary>
-    /// All four "already deleted" domain exceptions must be 409, not 500.
+    /// All five "already deleted" domain exceptions must be 409, not 500.
     ///
     /// Only the project one is reachable through the API today: every
     /// repository filters soft-deleted rows before an entity guard can fire, so
@@ -150,6 +150,7 @@ public class ExceptionMiddlewareTests
 
     public static TheoryData<Exception> AlreadyDeletedExceptions() =>
     [
+        new CommentAlreadyDeletedException(Guid.NewGuid()),
         new ProjectAlreadyDeletedException(Guid.NewGuid()),
         new TaskAlreadyDeletedException(Guid.NewGuid()),
         new WorkspaceAlreadyDeletedException(Guid.NewGuid()),
