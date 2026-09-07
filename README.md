@@ -38,7 +38,7 @@ dotnet run
 OpenAPI is exposed at `/openapi/v1.json` in Development.
 
 ```bash
-# Tests — 351 of them; the integration suite starts a PostgreSQL container,
+# Tests — 353 of them; the integration suite starts a PostgreSQL container,
 # so Docker must be running.
 dotnet test
 ```
@@ -178,13 +178,19 @@ it down. A client that disconnects should not leave a query running.
 
 ## Tests
 
-351 tests across three projects, mirroring the layers.
+353 tests across three projects, mirroring the layers.
 
 | Project | Count | What it covers |
 | --- | --- | --- |
 | `TaskFlow.Domain.Tests` | 100 | Entity invariants, every status transition, guards on soft-deleted entities — one test per mutating method rather than one representative test |
 | `TaskFlow.Application.Tests` | 115 | Service orchestration with substituted repositories and the **real** authorization services, plus the check-before-load audit |
-| `TaskFlow.Api.IntegrationTests` | 136 | The tenant regression suite over real HTTP, repository tenant filters against a real database, and the database's own constraints |
+| `TaskFlow.Api.IntegrationTests` | 138 | The tenant regression suite over real HTTP, repository tenant filters, database constraints, and the registration-to-task-lifecycle journey |
+
+The lifecycle journey registers and logs in a user, creates a new workspace,
+project and task, then starts, completes and reopens the task. Each transition
+is verified through an API read and a fresh database context. A separate test
+proves that starting an already started task returns 409 without changing its
+stored status or update timestamp.
 
 Integration tests run against PostgreSQL in Testcontainers, not the in-memory
 provider — the in-memory provider does not enforce constraints, so a tenant

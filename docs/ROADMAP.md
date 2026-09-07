@@ -3,7 +3,7 @@
 Working plan. Kept in the repo so any session — mine, an AI assistant's, or a
 reviewer's — starts from the real state rather than from memory.
 
-**Status:** phase 0 and phases 1-7 complete. In phase 8 — 8.1 through 8.5 done (8.5 folded into 8.4), 8.6 next.
+**Status:** phase 0 and phases 1-8 complete. Phase 9 next. Phase 8 closed with 353 passing tests in a local Release run; the existing CI workflow runs the suite on main pushes and pull requests. Remote CI for the closing commit remains to be verified after push.
 
 ---
 
@@ -46,8 +46,8 @@ test comes early rather than sixth.
 | 8.3 | **Tenant / security regression suite** | The most valuable work in this entire roadmap. See below. |
 | 8.4 | Application-layer and repository tests | ☑ Done. Mock repositories; **do not** mock the authorization services — those are what's under test. See below. |
 | 8.5 | Domain tests — fill the gaps | ☑ Done, folded into 8.4 as its group 4. |
-| 8.6 | API integration tests | End-to-end through the real HTTP pipeline: register → login → create workspace → create project → create task → transition it. |
-| 8.7 | Full suite green, CI wired | `dotnet test` clean, running in the workflow from 0.3. |
+| 8.6 | API integration tests | ☑ Done. Register → login → create workspace → create project → create task → start → complete → reopen. API and database assertions after each transition, plus a rejected-transition persistence check. |
+| 8.7 | Full suite green, CI wired | ☑ Done locally: `dotnet test --configuration Release --verbosity quiet` — 353 passed, 0 failed, 0 skipped on 2026-09-07. Existing workflow includes Release build/test and test-result artifacts; remote run pending push. |
 
 ### Why 8.3 comes third
 
