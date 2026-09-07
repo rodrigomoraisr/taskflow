@@ -3,7 +3,7 @@
 Working plan. Kept in the repo so any session — mine, an AI assistant's, or a
 reviewer's — starts from the real state rather than from memory.
 
-**Status:** phase 0 and phases 1-10 complete locally. Phase 11 next. Phase 10 has 455 passing Release tests. Phase 9 is committed as `0a07baa`. Completed phases are committed and pushed as they finish; LinkedIn posts follow a separate publishing schedule. Remote CI for Phase 10 is pending. Phase 8 remote CI passed on `6c54d24`.
+**Status:** phase 0 and phases 1-11 complete locally. Phase 12 next. Release suite: 496 passing tests. Completed phases are committed, pushed and checked in remote CI; LinkedIn posts follow a separate publishing schedule.
 
 ---
 
@@ -143,13 +143,23 @@ and indexes when measured usage justifies them. Remote CI is verified after push
 
 ## Phase 11 — Authentication hardening
 
-- Refresh tokens with rotation and reuse detection.
-- Logout / revocation. Decide and document: short-lived access tokens plus a refresh
-  flow, or a revocation list. Both are defensible; the trade-off is instant
-  revocation versus a database round trip per request.
-- Password rules and account lockout on repeated failures.
-- Rate limiting on `/auth/*` specifically — currently nothing stops credential
-  stuffing.
+**Complete locally on 2026-09-07.** Design: [ADR 0005](adr/0005-authentication-sessions-and-abuse-controls.md).
+
+- ☑ 15-minute access JWTs, zero clock skew, unique token IDs.
+- ☑ Seven-day absolute refresh sessions, single-use rotation and family reuse revocation.
+- ☑ Random 256-bit credentials stored only as SHA-256 hashes; transactional PostgreSQL
+  session locks protect concurrent refresh and logout.
+- ☑ Idempotent session logout; access remains valid until signed expiry.
+- ☑ Minimum 15-character password policy, explicit BCrypt byte limit.
+- ☑ Persistent five-failure/15-minute account lockouts, serialized user-row updates.
+- ☑ Auth-only IP rate limiting, 429/Retry-After, no-store responses.
+- ☑ New migration and documentation; 496 tests pass (129 Domain, 147 Application,
+  220 integration), including races, replay, rollback, expiry and lockout recovery.
+
+MFA, recovery/email verification, breached-password screening, expired-session
+cleanup and distributed rate limiting remain future work. A trusted-proxy setup is
+required before using forwarded client IPs; raw access tokens are not instantly
+revoked by logout. See ADR 0005 for the accepted limits.
 
 ## Phase 12 — Observability, API hardening & concurrency
 

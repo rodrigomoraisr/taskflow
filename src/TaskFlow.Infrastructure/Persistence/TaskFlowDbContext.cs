@@ -10,6 +10,9 @@ public class TaskFlowDbContext : DbContext
     {
     }
 
+    public DbSet<RefreshSession> RefreshSessions => Set<RefreshSession>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
     public DbSet<Comment> Comments => Set<Comment>();
     public DbSet<TaskActivity> TaskActivities => Set<TaskActivity>();
 

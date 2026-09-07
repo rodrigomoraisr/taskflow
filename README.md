@@ -38,7 +38,7 @@ dotnet run
 OpenAPI is exposed at `/openapi/v1.json` in Development.
 
 ```bash
-# Tests — 455 of them; the integration suite starts a PostgreSQL container,
+# Tests — 496 of them; the integration suite starts a PostgreSQL container,
 # so Docker must be running.
 dotnet test
 ```
@@ -90,6 +90,8 @@ through the public surface.
 ```
 POST   /auth/register
 POST   /auth/login
+POST   /auth/refresh
+POST   /auth/logout
 
 POST   /api/workspaces
 GET    /api/workspaces
@@ -221,13 +223,13 @@ it down. A client that disconnects should not leave a query running.
 
 ## Tests
 
-455 tests across three projects, mirroring the layers.
+496 tests across three projects, mirroring the layers.
 
 | Project | Count | What it covers |
 | --- | --- | --- |
-| `TaskFlow.Domain.Tests` | 119 | Entity invariants, every status transition, guards on soft-deleted entities — one test per mutating method rather than one representative test |
-| `TaskFlow.Application.Tests` | 140 | Service orchestration with substituted repositories and the **real** authorization services, plus the check-before-load audit |
-| `TaskFlow.Api.IntegrationTests` | 196 | The tenant regression suite over real HTTP, repository tenant filters, database constraints, the registration-to-task-lifecycle journey, comments, transactional activity, and filtered/sorted task queries |
+| `TaskFlow.Domain.Tests` | 129 | Entity invariants, every status transition, guards on soft-deleted entities — one test per mutating method rather than one representative test |
+| `TaskFlow.Application.Tests` | 147 | Service orchestration with substituted repositories and the **real** authorization services, plus the check-before-load audit |
+| `TaskFlow.Api.IntegrationTests` | 220 | The tenant regression suite over real HTTP, repository tenant filters, database constraints, the registration-to-task-lifecycle journey, comments, transactional activity, filtered/sorted task queries, and authentication replay/race/lockout controls |
 
 The lifecycle journey registers and logs in a user, creates a new workspace,
 project and task, then starts, completes and reopens the task. Each transition
@@ -267,9 +269,34 @@ missing, which is the correct behaviour.
 > key. It has been removed from the current tree and is not used anywhere. It was
 > never a production secret.
 
-Token validation has issuer, audience, lifetime and signing-key checks all enabled.
-Passwords are hashed with BCrypt. Unhandled exceptions return a generic message
-rather than the exception text.
+Access JWTs last 15 minutes by default, with issuer, audience, lifetime, signing-key
+and algorithm checks and zero clock skew. Login also returns a random refresh token
+and `refreshTokenExpiresAt`. Refresh sessions last seven days without sliding expiry.
+
+`POST /auth/refresh` and `POST /auth/logout` take
+`{ "refreshToken": "<token returned by login>" }`. Every successful refresh returns
+new access/refresh tokens; replace the stored token and serialize refresh calls.
+Reusing an old token revokes that login session. Logout revokes its refresh session
+but existing access JWTs remain valid until their signed expiry. Tokens are sent in
+JSON bodies and auth responses are marked `no-store`. Use HTTPS when deployed and
+never log credentials. Only SHA-256 refresh-token hashes are stored in PostgreSQL.
+
+Five failed passwords lock new logins for 15 minutes; counters persist in PostgreSQL.
+All auth endpoints share a 20-request/minute limit per remote IP, per instance,
+returning 429 and Retry-After. `AuthRateLimit:PermitLimit` and
+`AuthRateLimit:WindowSeconds` configure it. Arbitrary forwarding headers are ignored;
+a trusted reverse proxy needs explicit configuration before deployment.
+
+New passwords require at least 15 Unicode characters, at most 72 UTF-8 bytes, and
+no control characters. BCrypt is retained, with no silent truncation or composition
+rules. Existing shorter passwords can still log in. Unknown, inactive, locked and
+wrong-password login attempts return the same generic 401; registration retains
+its duplicate-email 409 behavior. Unhandled errors do not expose exception text.
+
+Apply the new `AddRefreshSessionsAndLoginLockout` migration before running the
+updated API. No migration creates credentials for existing accounts: log in to
+start a refresh session. See [ADR 0005](docs/adr/0005-authentication-sessions-and-abuse-controls.md)
+for transaction/locking behavior, race semantics and operational limitations.
 
 ---
 
@@ -277,11 +304,9 @@ rather than the exception text.
 
 These are decisions, not omissions.
 
-- **Refresh tokens and logout.** Access tokens are short-lived and there is no
-  revocation. Real revocation needs either a token blacklist or short-lived access
-  tokens plus a refresh flow — planned, not built.
-- **Rate limiting.** Nothing stops a caller from hammering `/auth/login`. This is the
-  most obvious hole in the current auth surface.
+- **MFA, recovery and distributed abuse controls.** Password reset, email verification,
+  breached-password checks, all-device logout and distributed rate limits remain
+  outside this phase. Expired refresh-session cleanup also needs an operational job.
 - **Structured logging and health checks.** There is no `ILogger` usage yet, which
   means an unexpected 500 currently leaves no trace. This is the next thing worth
   fixing — and the one place the 404 in ADR 0001 costs something, since "not a
@@ -300,9 +325,8 @@ These are decisions, not omissions.
 
 The working plan is in [`docs/ROADMAP.md`](docs/ROADMAP.md). The immediate queue:
 
-1. Phase 11: refresh tokens, logout, and authentication rate limiting.
-2. Phase 12: logging, `ProblemDetails`, health checks and optimistic concurrency.
-3. Phases 13–14: containerize the API and add deployment.
+1. Phase 12: logging, `ProblemDetails`, health checks and optimistic concurrency.
+2. Phases 13–14: containerize the API and add deployment.
 
 ---
 

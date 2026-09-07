@@ -1,6 +1,44 @@
 @TaskFlow.Api_HostAddress = http://localhost:5056
+# Example-only credentials for local development; never reuse them elsewhere.
+@email = developer@example.test
+@password = Local-demo-passphrase-2026
+@accessToken = paste-access-token-here
+@refreshToken = paste-current-refresh-token-here
 
-GET {{TaskFlow.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+### Register
+POST {{TaskFlow.Api_HostAddress}}/auth/register
+Content-Type: application/json
 
-###
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Login: copy token and refreshToken from the response into the variables above
+POST {{TaskFlow.Api_HostAddress}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Read workspaces
+GET {{TaskFlow.Api_HostAddress}}/api/workspaces
+Authorization: Bearer {{accessToken}}
+
+### Rotate: replace BOTH variables with the new response; do not reuse the old refresh token
+POST {{TaskFlow.Api_HostAddress}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### Logout this refresh session (access token remains valid until expiry)
+POST {{TaskFlow.Api_HostAddress}}/auth/logout
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}

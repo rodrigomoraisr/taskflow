@@ -1,18 +1,23 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using TaskFlow.Application.Common.Interfaces;
 using TaskFlow.Application.Users;
 
 namespace TaskFlow.Api.Controllers;
 
 [ApiController]
+[EnableRateLimiting("auth")]
 [Route("auth")]
 public class AuthController : ControllerBase
 {
     private readonly IUserService _userService;
+    private readonly IAuthenticationService _authentication;
 
     public AuthController(
-        IUserService userService)
+        IUserService userService, IAuthenticationService authentication)
     {
         _userService = userService;
+        _authentication = authentication;
     }
 
     [HttpPost("register")]
@@ -34,10 +39,20 @@ public class AuthController : ControllerBase
         LoginRequest request,
         CancellationToken cancellationToken)
     {
-        var response = await _userService.LoginAsync(
+        var response = await _authentication.LoginAsync(
             request,
             cancellationToken);
 
         return Ok(response);
+    }
+    [HttpPost("refresh")]
+    public async Task<ActionResult<LoginResponse>> Refresh(RefreshRequest request, CancellationToken cancellationToken)
+        => Ok(await _authentication.RefreshAsync(request, cancellationToken));
+
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(RefreshRequest request, CancellationToken cancellationToken)
+    {
+        await _authentication.LogoutAsync(request, cancellationToken);
+        return NoContent();
     }
 }

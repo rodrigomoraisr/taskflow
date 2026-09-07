@@ -282,3 +282,25 @@ expressions. Every order ends with task ID. Null dates stay last; status order i
 Todo/InProgress/Done even though persistence stores status text. Dates are inclusive
 instant bounds normalized to UTC. Retain validation in direct service calls as
 well as HTTP. Adding a filter requires page/count and tenant regression coverage.
+
+## Phase 11 — Authentication
+
+Read `docs/adr/0005-authentication-sessions-and-abuse-controls.md` before modifying
+authentication. Access JWTs last at most 15 minutes, without clock skew. Refresh
+sessions expire after seven days; token rotation and logout lock the session row
+in PostgreSQL. Load a refresh token only after acquiring that lock. Store only
+SHA-256 hashes of random 256-bit tokens; never log raw credentials.
+
+`AuthenticationService` owns login/refresh/logout; `UserService` owns registration.
+User-row locks protect the five-failure/15-minute lockout counter. Auth persistence
+is account-scoped and intentionally has no workspace ID. `IAuthTransaction` keeps
+EF transactions in Infrastructure. Failure counters and replay revocations are
+intentional commits on rejected requests, exceptions to the ordinary no-commit
+rule; tests must verify those changes survive the error response.
+
+Rate limits cover /auth/* by remote IP, default 20/minute per process. Do not trust
+arbitrary forwarding headers. Test fixtures raise this limit for unrelated flows;
+dedicated limiter tests run the real policy with a small threshold. Password policy
+is minimum 15 Unicode scalar values and maximum 72 UTF-8 bytes for BCrypt, without
+composition rules. Legacy shorter passwords still authenticate. Logout/replay does
+not immediately revoke access JWTs; clients must serialize refresh requests.

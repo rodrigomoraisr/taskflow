@@ -11,11 +11,13 @@ namespace TaskFlow.Infrastructure.Security;
 public class JwtTokenGenerator : IJwtTokenGenerator
 {
     private readonly IConfiguration _configuration;
+    private readonly TimeProvider _clock;
 
     public JwtTokenGenerator(
-        IConfiguration configuration)
+        IConfiguration configuration, TimeProvider clock)
     {
         _configuration = configuration;
+        _clock = clock;
     }
 
     public string GenerateToken(User user)
@@ -35,10 +37,10 @@ public class JwtTokenGenerator : IJwtTokenGenerator
 
         if (!int.TryParse(
                 _configuration["Jwt:ExpirationMinutes"],
-                out var expirationMinutes))
+                out var expirationMinutes) || expirationMinutes is < 1 or > 15)
         {
             throw new InvalidOperationException(
-                "Jwt:ExpirationMinutes is missing or is not an integer.");
+                "Jwt:ExpirationMinutes must be between 1 and 15.");
         }
 
         var signingKey = new SymmetricSecurityKey(
@@ -50,6 +52,7 @@ public class JwtTokenGenerator : IJwtTokenGenerator
 
         var claims = new List<Claim>
         {
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(JwtRegisteredClaimNames.Email, user.Email)
         };
@@ -58,7 +61,7 @@ public class JwtTokenGenerator : IJwtTokenGenerator
             issuer: _configuration["Jwt:Issuer"],
             audience: _configuration["Jwt:Audience"],
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(expirationMinutes),
+            expires: _clock.GetUtcNow().UtcDateTime.AddMinutes(expirationMinutes),
             signingCredentials: credentials
         );
 

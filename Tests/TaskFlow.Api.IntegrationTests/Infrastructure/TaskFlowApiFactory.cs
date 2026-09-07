@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using TaskFlow.Api.Security;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace TaskFlow.Api.IntegrationTests.Infrastructure;
@@ -18,6 +20,9 @@ public sealed class TaskFlowApiFactory : WebApplicationFactory<Program>
     public const string SigningKey =
         "taskflow-integration-tests-signing-key-not-a-secret";
 
+    public TimeProvider Clock { get; set; } = TimeProvider.System;
+    public int AuthPermitLimit { get; set; } = 1000;
+
     public TaskFlowApiFactory(string connectionString)
     {
         // Program.cs reads Jwt:Key and the connection string from
@@ -31,7 +36,7 @@ public sealed class TaskFlowApiFactory : WebApplicationFactory<Program>
         Environment.SetEnvironmentVariable("Jwt__Key", SigningKey);
         Environment.SetEnvironmentVariable("Jwt__Issuer", "TaskFlow");
         Environment.SetEnvironmentVariable("Jwt__Audience", "TaskFlowUsers");
-        Environment.SetEnvironmentVariable("Jwt__ExpirationMinutes", "60");
+        Environment.SetEnvironmentVariable("Jwt__ExpirationMinutes", "15");
 
         // Not Development: that would load whichever developer's user secrets
         // happen to be on the machine and make the suite depend on them.
@@ -41,5 +46,10 @@ public sealed class TaskFlowApiFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        builder.ConfigureServices(services =>
+        {
+            services.AddSingleton(Clock);
+            services.Configure<AuthRateLimitOptions>(options => options.PermitLimit = AuthPermitLimit);
+        });
     }
 }

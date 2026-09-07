@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using System.Threading.RateLimiting;
+using System.Globalization;
 using TaskFlow.Api.Middleware;
 using TaskFlow.Application.Common;
 using TaskFlow.Application.Common.Interfaces;
@@ -27,6 +29,27 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
+builder.Services.AddScoped<IAuthenticationRepository, AuthenticationRepository>();
+builder.Services.AddSingleton<IRefreshTokenCodec, RefreshTokenCodec>();
+builder.Services.AddOptions<AuthRateLimitOptions>()
+    .Bind(builder.Configuration.GetSection("AuthRateLimit"))
+    .ValidateDataAnnotations().ValidateOnStart();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy<string, AuthRateLimitPolicy>("auth");
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+            context.HttpContext.Response.Headers.RetryAfter =
+                Math.Ceiling(retryAfter.TotalSeconds).ToString(CultureInfo.InvariantCulture);
+        await context.HttpContext.Response.WriteAsJsonAsync(
+            new { error = "Too many authentication requests. Try again later." }, cancellationToken);
+    };
+});
 
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddScoped<IWorkspaceAuthorizationService, WorkspaceAuthorizationService>();
@@ -80,6 +103,10 @@ if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
         + " bytes.");
 }
 
+if (!int.TryParse(builder.Configuration["Jwt:ExpirationMinutes"], out var accessMinutes)
+    || accessMinutes is < 1 or > 15)
+    throw new InvalidOperationException("Jwt:ExpirationMinutes must be between 1 and 15.");
+
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -90,6 +117,8 @@ builder.Services
                 ValidateIssuer = true,
                 ValidateAudience = true,
                 ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero,
+                ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
                 ValidateIssuerSigningKey = true,
 
                 ValidIssuer = builder.Configuration["Jwt:Issuer"],
@@ -111,10 +140,21 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/auth"))
+    {
+        context.Response.Headers.CacheControl = "no-store";
+        context.Response.Headers.Pragma = "no-cache";
+    }
+    await next(context);
+});
 app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseHttpsRedirection();
 
+app.UseRouting();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

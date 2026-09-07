@@ -11,6 +11,25 @@ public class User : BaseEntity
 
     public bool IsActive { get; private set; } = true;
 
+    public int FailedLoginAttempts { get; private set; }
+    public DateTime? LockoutEndsAt { get; private set; }
+
+    public bool IsLockedAt(DateTime now) => LockoutEndsAt.HasValue && now < LockoutEndsAt.Value;
+
+    public void RecordFailedLogin(DateTime now)
+    {
+        if (IsLockedAt(now)) return;
+        if (LockoutEndsAt.HasValue) ResetFailedLogins();
+        FailedLoginAttempts++;
+        if (FailedLoginAttempts >= 5) LockoutEndsAt = now.AddMinutes(15);
+    }
+
+    public void ResetFailedLogins()
+    {
+        FailedLoginAttempts = 0;
+        LockoutEndsAt = null;
+    }
+
     public User(
     string email,
     string passwordHash)
