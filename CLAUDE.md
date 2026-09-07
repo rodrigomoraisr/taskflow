@@ -268,3 +268,17 @@ Activity has no mutation API and the DbContext refuses tracked modifications or
 removals. This is an application guarantee, not protection against privileged SQL.
 The ordering audit now covers 27 workspace-scoped methods (the earlier 21-method
 figures above describe the Phase 8.4 measurement).
+
+## Phase 10 — Task queries
+
+Read `docs/adr/0004-task-query-contract.md` for filter and ordering semantics.
+`GetTasksRequest` now carries filters and validated sort tokens; page/count receive
+that same request plus the mandatory route workspace ID. They share `Filtered` in
+TaskRepository, which builds on the same active-task query as GetByIdAsync.
+The Phase 8.4 note about separately written count/page predicates is historical.
+
+Keep sorting a switch over typed expressions, never dynamic SQL or client-built
+expressions. Every order ends with task ID. Null dates stay last; status order is
+Todo/InProgress/Done even though persistence stores status text. Dates are inclusive
+instant bounds normalized to UTC. Retain validation in direct service calls as
+well as HTTP. Adding a filter requires page/count and tenant regression coverage.

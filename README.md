@@ -38,7 +38,7 @@ dotnet run
 OpenAPI is exposed at `/openapi/v1.json` in Development.
 
 ```bash
-# Tests — 410 of them; the integration suite starts a PostgreSQL container,
+# Tests — 455 of them; the integration suite starts a PostgreSQL container,
 # so Docker must be running.
 dotnet test
 ```
@@ -118,6 +118,23 @@ POST   /api/workspaces/{workspaceId}/tasks/{id}/reopen
 PUT    /api/workspaces/{workspaceId}/tasks/{id}/assignee
 DELETE /api/workspaces/{workspaceId}/tasks/{id}/assignee
 ```
+
+Task listing supports combined filters and explicit sorting. For example:
+
+```http
+GET /api/workspaces/{workspaceId}/tasks?status=InProgress&priority=High&unassigned=true&sortBy=dueDate&sortDirection=asc&page=1&pageSize=20
+```
+
+Additional filters: `assigneeUserId`, `projectId`, `dueDateFrom`, `dueDateTo`.
+Date bounds are inclusive UTC instants (send ISO 8601 with `Z` or an offset), not
+whole-day ranges. Every supplied filter must match; `unassigned=true` cannot be
+combined with `assigneeUserId`. Invalid filters return 400.
+
+Sort fields: `createdAt`, `updatedAt`, `title`, `priority`, `status`, `dueDate`.
+The default remains newest-created first. Null dates sort last, status uses workflow
+order, and task ID breaks ties. `totalCount` uses the same filters as `items`, before
+paging. See [ADR 0004](docs/adr/0004-task-query-contract.md) for semantics and the
+concurrency limits of offset pagination.
 
 Comments and task activity:
 
@@ -204,13 +221,13 @@ it down. A client that disconnects should not leave a query running.
 
 ## Tests
 
-410 tests across three projects, mirroring the layers.
+455 tests across three projects, mirroring the layers.
 
 | Project | Count | What it covers |
 | --- | --- | --- |
 | `TaskFlow.Domain.Tests` | 119 | Entity invariants, every status transition, guards on soft-deleted entities — one test per mutating method rather than one representative test |
-| `TaskFlow.Application.Tests` | 135 | Service orchestration with substituted repositories and the **real** authorization services, plus the check-before-load audit |
-| `TaskFlow.Api.IntegrationTests` | 156 | The tenant regression suite over real HTTP, repository tenant filters, database constraints, the registration-to-task-lifecycle journey, comments and transactional activity |
+| `TaskFlow.Application.Tests` | 140 | Service orchestration with substituted repositories and the **real** authorization services, plus the check-before-load audit |
+| `TaskFlow.Api.IntegrationTests` | 196 | The tenant regression suite over real HTTP, repository tenant filters, database constraints, the registration-to-task-lifecycle journey, comments, transactional activity, and filtered/sorted task queries |
 
 The lifecycle journey registers and logs in a user, creates a new workspace,
 project and task, then starts, completes and reopens the task. Each transition
@@ -283,10 +300,9 @@ These are decisions, not omissions.
 
 The working plan is in [`docs/ROADMAP.md`](docs/ROADMAP.md). The immediate queue:
 
-1. Phase 10: task filtering and sorting, with an allow-list of sortable fields.
-2. Phase 11: refresh tokens, logout, and authentication rate limiting.
-3. Phase 12: logging, `ProblemDetails`, health checks and optimistic concurrency.
-4. Phases 13–14: containerize the API and add deployment.
+1. Phase 11: refresh tokens, logout, and authentication rate limiting.
+2. Phase 12: logging, `ProblemDetails`, health checks and optimistic concurrency.
+3. Phases 13–14: containerize the API and add deployment.
 
 ---
 

@@ -252,8 +252,8 @@ public sealed class ServiceTestContext
         Activities.GetPagedAsync(default, default, default, default, default).ThrowsAsyncForAnyArgs(reached);
 
         Tasks.GetByIdAsync(default, default, default).ThrowsAsyncForAnyArgs(reached);
-        Tasks.GetPagedAsync(default, default, default, default).ThrowsAsyncForAnyArgs(reached);
-        Tasks.CountAsync(default, default).ThrowsAsyncForAnyArgs(reached);
+        Tasks.GetPagedAsync(default, default!, default).ThrowsAsyncForAnyArgs(reached);
+        Tasks.CountAsync(default, default!, default).ThrowsAsyncForAnyArgs(reached);
 
         Projects.GetByIdAsync(default, default, default).ThrowsAsyncForAnyArgs(reached);
         Projects.GetByWorkspaceAsync(default, default).ThrowsAsyncForAnyArgs(reached);

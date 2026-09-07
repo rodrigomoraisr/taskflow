@@ -1,3 +1,4 @@
+using TaskFlow.Application.Tasks;
 using TaskFlow.Domain.Entities;
 
 namespace TaskFlow.Application.Common.Interfaces;
@@ -18,13 +19,13 @@ public interface ITaskRepository
 
     Task<List<TaskItem>> GetPagedAsync(
         Guid workspaceId,
-        int page, 
-        int pageSize, 
+        GetTasksRequest query,
         CancellationToken cancellationToken = default
     );
 
     Task<int> CountAsync(
         Guid workspaceId,
+        GetTasksRequest query,
         CancellationToken cancellationToken = default
     );
 }

@@ -122,14 +122,16 @@ public class TaskService : ITaskService
             workspaceId,
             cancellationToken);
 
+        request.EnsureValid();
+
         var tasks = await _taskRepository.GetPagedAsync(
             workspaceId,
-            request.Page,
-            request.PageSize,
+            request,
             cancellationToken);
 
         var totalCount = await _taskRepository.CountAsync(
             workspaceId,
+            request,
             cancellationToken);
             
         return new GetTasksResponse

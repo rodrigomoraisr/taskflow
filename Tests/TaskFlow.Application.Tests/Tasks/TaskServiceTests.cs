@@ -201,13 +201,12 @@ public sealed class TaskServiceTests
         context.Tasks
             .GetPagedAsync(
                 context.WorkspaceId,
-                2,
-                10,
+                Arg.Is<GetTasksRequest>(q => q.Page == 2 && q.PageSize == 10),
                 Arg.Any<CancellationToken>())
             .Returns([]);
 
         context.Tasks
-            .CountAsync(context.WorkspaceId, Arg.Any<CancellationToken>())
+            .CountAsync(context.WorkspaceId, Arg.Any<GetTasksRequest>(), Arg.Any<CancellationToken>())
             .Returns(37);
 
         var service = context.CreateTaskService();
@@ -226,13 +225,12 @@ public sealed class TaskServiceTests
             .Received(1)
             .GetPagedAsync(
                 context.WorkspaceId,
-                2,
-                10,
+                Arg.Is<GetTasksRequest>(q => q.Page == 2 && q.PageSize == 10),
                 Arg.Any<CancellationToken>());
 
         await context.Tasks
             .Received(1)
-            .CountAsync(context.WorkspaceId, Arg.Any<CancellationToken>());
+            .CountAsync(context.WorkspaceId, Arg.Any<GetTasksRequest>(), Arg.Any<CancellationToken>());
     }
 
     // ---------------------------------------------------------------

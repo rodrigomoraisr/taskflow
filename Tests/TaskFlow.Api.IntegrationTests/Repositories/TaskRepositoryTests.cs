@@ -1,3 +1,4 @@
+using TaskFlow.Application.Tasks;
 using TaskFlow.Api.IntegrationTests.Infrastructure;
 using TaskFlow.Infrastructure.Repositories;
 
@@ -159,7 +160,7 @@ public sealed class TaskRepositoryTests : RepositoryTestBase
         var repository = new TaskRepository(db);
 
         // Act
-        var page = await repository.GetPagedAsync(a.WorkspaceId, 1, 50);
+        var page = await repository.GetPagedAsync(a.WorkspaceId, new GetTasksRequest { Page = 1, PageSize = 50 });
 
         // Assert
         Assert.Equal(2, page.Count);
@@ -186,7 +187,7 @@ public sealed class TaskRepositoryTests : RepositoryTestBase
         var repository = new TaskRepository(db);
 
         // Act
-        var page = await repository.GetPagedAsync(a.WorkspaceId, 1, 50);
+        var page = await repository.GetPagedAsync(a.WorkspaceId, new GetTasksRequest { Page = 1, PageSize = 50 });
 
         // Assert
         Assert.Single(page);
@@ -214,7 +215,7 @@ public sealed class TaskRepositoryTests : RepositoryTestBase
         var repository = new TaskRepository(db);
 
         // Act
-        var page = await repository.GetPagedAsync(a.WorkspaceId, 1, 50);
+        var page = await repository.GetPagedAsync(a.WorkspaceId, new GetTasksRequest { Page = 1, PageSize = 50 });
 
         // Assert
         Assert.Empty(page);
@@ -244,7 +245,7 @@ public sealed class TaskRepositoryTests : RepositoryTestBase
         var repository = new TaskRepository(db);
 
         // Act
-        var count = await repository.CountAsync(a.WorkspaceId);
+        var count = await repository.CountAsync(a.WorkspaceId, new GetTasksRequest());
 
         // Assert
         Assert.Equal(1, count);
@@ -270,7 +271,7 @@ public sealed class TaskRepositoryTests : RepositoryTestBase
         var repository = new TaskRepository(db);
 
         // Act
-        var count = await repository.CountAsync(a.WorkspaceId);
+        var count = await repository.CountAsync(a.WorkspaceId, new GetTasksRequest());
 
         // Assert
         Assert.Equal(1, count);
@@ -297,16 +298,15 @@ public sealed class TaskRepositoryTests : RepositoryTestBase
         var repository = new TaskRepository(db);
 
         // Act
-        var count = await repository.CountAsync(a.WorkspaceId);
+        var count = await repository.CountAsync(a.WorkspaceId, new GetTasksRequest());
 
         // Assert
         Assert.Equal(0, count);
     }
 
     /// <summary>
-    /// The two queries are separate expressions that happen to repeat the same
-    /// three predicates — there is no shared query builder to keep them
-    /// honest. So they are asserted against each other rather than separately:
+    /// The page and count now share the same filtered query. Keep this regression
+    /// assertion against the public methods so later divergence is still caught:
     /// a count that ignores a filter the page applies produces a pager that
     /// promises rows it will never show, and tells the caller how many rows
     /// another tenant has.
@@ -345,7 +345,7 @@ public sealed class TaskRepositoryTests : RepositoryTestBase
         const int pageSize = 3;
 
         // Act
-        var count = await repository.CountAsync(a.WorkspaceId);
+        var count = await repository.CountAsync(a.WorkspaceId, new GetTasksRequest());
 
         var collected = new List<Guid>();
 
@@ -353,8 +353,7 @@ public sealed class TaskRepositoryTests : RepositoryTestBase
         {
             var items = await repository.GetPagedAsync(
                 a.WorkspaceId,
-                page,
-                pageSize);
+                new GetTasksRequest { Page = page, PageSize = pageSize });
 
             if (items.Count == 0)
                 break;
@@ -386,7 +385,7 @@ public sealed class TaskRepositoryTests : RepositoryTestBase
         var repository = new TaskRepository(db);
 
         // Act
-        var page = await repository.GetPagedAsync(a.WorkspaceId, 2, 20);
+        var page = await repository.GetPagedAsync(a.WorkspaceId, new GetTasksRequest { Page = 2, PageSize = 20 });
 
         // Assert
         Assert.Empty(page);

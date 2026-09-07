@@ -3,7 +3,7 @@
 Working plan. Kept in the repo so any session — mine, an AI assistant's, or a
 reviewer's — starts from the real state rather than from memory.
 
-**Status:** phase 0 and phases 1-9 complete locally. Phase 10 next. Phase 8 remote CI passed on commit `6c54d24`. Phase 9 closes with 410 passing Release tests; remote CI for the Phase 9 commit is pending push.
+**Status:** phase 0 and phases 1-10 complete locally. Phase 11 next. Phase 10 has 455 passing Release tests. Phase 9 is committed as `0a07baa`. Completed phases are committed and pushed as they finish; LinkedIn posts follow a separate publishing schedule. Remote CI for Phase 10 is pending. Phase 8 remote CI passed on `6c54d24`.
 
 ---
 
@@ -125,11 +125,21 @@ tracked EF saves, not privileged SQL. Concurrency remains in Phase 12.
 
 ## Phase 10 — Querying, filtering & sorting
 
-- Filter tasks by status, priority, assignee, project, due-date range.
-- Sorting with an allow-list of sortable fields — never interpolate a client string
-  into an `OrderBy`.
-- Keep the `[Range(1, 100)]` page-size cap. Consider cursor pagination if offset
-  depth becomes a real problem; document the choice either way.
+**Complete locally on 2026-09-07.** Contract and tradeoffs:
+[ADR 0004](adr/0004-task-query-contract.md).
+
+- ☑ AND-combined status, priority, assignee, project and inclusive due-date filters.
+- ☑ Explicit unassigned filter; date offsets normalized to UTC.
+- ☑ Six allowed sort fields, both directions, stable ID tie-breaker and null dates last.
+- ☑ Shared repository predicates for filtered pages/count and mandatory tenant scope.
+- ☑ Existing page-number API and 100-item cap retained; overflow-safe offsets.
+- ☑ Query validation through HTTP and direct service calls.
+- ☑ Full Release suite: 455 passed, 0 failed, 0 skipped — 119 Domain,
+  140 Application, 196 integration. No migration required.
+
+Offset pagination remains appropriate for the current page/total-count contract;
+concurrent writes can change pages/counts between queries. Revisit cursor pagination
+and indexes when measured usage justifies them. Remote CI is verified after push; publication follows a separate schedule.
 
 ## Phase 11 — Authentication hardening
 
