@@ -143,6 +143,8 @@ public sealed class AuthenticationTests(PostgreSqlFixture postgres) : Integratio
             using var failure = await client.PostAsJsonAsync("/auth/login", new LoginRequest { Email = owner.Email, Password = "wrong-password" });
             Assert.Equal(HttpStatusCode.Unauthorized, failure.StatusCode);
         }
+        // Hold request metadata constant when comparing the security-relevant body.
+        client.DefaultRequestHeaders.Add("X-Correlation-ID", "login-comparison");
         using var locked = await client.PostAsJsonAsync("/auth/login", new LoginRequest { Email = owner.Email, Password = owner.Password });
         using var unknown = await client.PostAsJsonAsync("/auth/login", new LoginRequest { Email = "unknown@taskflow.test", Password = owner.Password });
         Assert.Equal(HttpStatusCode.Unauthorized, locked.StatusCode);

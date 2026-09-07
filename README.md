@@ -38,7 +38,7 @@ dotnet run
 OpenAPI is exposed at `/openapi/v1.json` in Development.
 
 ```bash
-# Tests — 496 of them; the integration suite starts a PostgreSQL container,
+# Tests — 516 of them; the integration suite starts a PostgreSQL container,
 # so Docker must be running.
 dotnet test
 ```
@@ -223,13 +223,13 @@ it down. A client that disconnects should not leave a query running.
 
 ## Tests
 
-496 tests across three projects, mirroring the layers.
+516 tests across three projects, mirroring the layers.
 
 | Project | Count | What it covers |
 | --- | --- | --- |
 | `TaskFlow.Domain.Tests` | 129 | Entity invariants, every status transition, guards on soft-deleted entities — one test per mutating method rather than one representative test |
 | `TaskFlow.Application.Tests` | 147 | Service orchestration with substituted repositories and the **real** authorization services, plus the check-before-load audit |
-| `TaskFlow.Api.IntegrationTests` | 220 | The tenant regression suite over real HTTP, repository tenant filters, database constraints, the registration-to-task-lifecycle journey, comments, transactional activity, filtered/sorted task queries, and authentication replay/race/lockout controls |
+| `TaskFlow.Api.IntegrationTests` | 240 | Tenant isolation over real HTTP, repository filters, database constraints, lifecycle journeys, comments/activity, task queries, authentication races/lockouts, correlated errors, health checks, rate limits and concurrency rollback |
 
 The lifecycle journey registers and logs in a user, creates a new workspace,
 project and task, then starts, completes and reopens the task. Each transition
@@ -300,6 +300,29 @@ for transaction/locking behavior, race semantics and operational limitations.
 
 ---
 
+## Operations and conflict handling
+
+Responses include `X-Correlation-ID`. Send your own ID (1–64 ASCII letters, digits,
+dots, underscores or hyphens) to connect a client report with the JSON console logs.
+Errors now use `application/problem+json`: read `detail` instead of the old `error`
+field, with `errors` for validation failures. Unexpected 500 details stay in logs.
+
+`GET /health/live` checks that the process can respond. `GET /health/ready` checks
+database connectivity and returns 503 if unavailable. Probes are anonymous and
+remain available when rate limits are exhausted. A global per-IP limit of 120
+requests/minute applies across application routes, in addition to the stricter
+auth limit. Configure it under `GlobalRateLimit`; 429 responses include `Retry-After`.
+Limits are per instance and do not trust arbitrary forwarding headers.
+
+Task/project saves use PostgreSQL `xmin` for optimistic concurrency. A competing
+write between load and save produces 409 and rolls back accompanying task activity.
+Reload and review before resubmitting. Apply `AddTaskAndProjectConcurrency` through
+the normal migration command; PostgreSQL already owns the underlying system column.
+See [ADR 0006](docs/adr/0006-observability-hardening-and-concurrency.md) for the error
+contract, tests and limits of this design.
+
+---
+
 ## Deliberately left out
 
 These are decisions, not omissions.
@@ -307,13 +330,11 @@ These are decisions, not omissions.
 - **MFA, recovery and distributed abuse controls.** Password reset, email verification,
   breached-password checks, all-device logout and distributed rate limits remain
   outside this phase. Expired refresh-session cleanup also needs an operational job.
-- **Structured logging and health checks.** There is no `ILogger` usage yet, which
-  means an unexpected 500 currently leaves no trace. This is the next thing worth
-  fixing — and the one place the 404 in ADR 0001 costs something, since "not a
-  member" and "does not exist" are indistinguishable server-side too.
-- **Optimistic concurrency.** Simultaneous task or comment edits currently use
-  last-write-wins behavior. A concurrency token and conflict handling are planned
-  for Phase 12; activity snapshots do not provide concurrency protection.
+- **Client version preconditions and comment concurrency.** Task/project tokens
+  protect overlapping server writes. Detecting an old edit form needs a client
+  version contract such as `If-Match`; comment edits still use last-write-wins.
+- **Centralized telemetry.** JSON console logs are available, but log shipping,
+  metrics, distributed tracing and alerting remain deployment work.
 - **A frontend.** This is an API. The HTTP collection in
   `src/TaskFlow.Api/TaskFlow.Api.http` and the notes in `docs/` are how it gets
   exercised by hand.
@@ -325,8 +346,8 @@ These are decisions, not omissions.
 
 The working plan is in [`docs/ROADMAP.md`](docs/ROADMAP.md). The immediate queue:
 
-1. Phase 12: logging, `ProblemDetails`, health checks and optimistic concurrency.
-2. Phases 13–14: containerize the API and add deployment.
+1. Phase 13: containerize the API and prepare deployment.
+2. Phase 14: continuous deployment.
 
 ---
 

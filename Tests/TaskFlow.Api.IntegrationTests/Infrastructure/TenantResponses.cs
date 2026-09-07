@@ -31,9 +31,10 @@ public static class TenantResponses
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
 
         var body = await response.Content
-            .ReadFromJsonAsync<ErrorBody>();
+            .ReadFromJsonAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>();
 
-        Assert.Equal(WorkspaceNotFoundBody(workspaceId), body!.Error);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(WorkspaceNotFoundBody(workspaceId), body!.Detail);
     }
 
     /// <summary>
@@ -46,13 +47,12 @@ public static class TenantResponses
     {
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
 
-        var body = await response.Content.ReadFromJsonAsync<ErrorBody>();
+        var body = await response.Content.ReadFromJsonAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>();
 
         Assert.DoesNotContain(
             workspaceId.ToString(),
-            body!.Error,
+            body!.Detail,
             StringComparison.OrdinalIgnoreCase);
     }
 
-    public sealed record ErrorBody(string Error);
 }

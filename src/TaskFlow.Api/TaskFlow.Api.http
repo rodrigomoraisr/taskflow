@@ -26,6 +26,17 @@ Content-Type: application/json
 ### Read workspaces
 GET {{TaskFlow.Api_HostAddress}}/api/workspaces
 Authorization: Bearer {{accessToken}}
+X-Correlation-ID: manual-workspaces-001
+
+### Liveness (no database dependency)
+GET {{TaskFlow.Api_HostAddress}}/health/live
+
+### Readiness (database connectivity)
+GET {{TaskFlow.Api_HostAddress}}/health/ready
+
+### ProblemDetails example (404 with matching correlation header/body)
+GET {{TaskFlow.Api_HostAddress}}/not-a-route
+X-Correlation-ID: manual-error-001
 
 ### Rotate: replace BOTH variables with the new response; do not reuse the old refresh token
 POST {{TaskFlow.Api_HostAddress}}/auth/refresh

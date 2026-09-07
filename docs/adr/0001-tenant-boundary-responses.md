@@ -39,6 +39,11 @@ who they are.
 **Case 1 and case 2 return responses that are byte-identical.** Both are 404,
 and both render their body through a single helper in `ExceptionMiddleware`:
 
+Phase 12 amendment: ADR 0006 changes the envelope to ProblemDetails and adds
+per-request correlation metadata. The business fields remain identical; complete
+body comparisons hold the correlation ID constant. The error format change does
+not change the tenant disclosure decision.
+
 ```csharp
 private static string WorkspaceNotFound(Guid workspaceId)
     => $"The workspace {workspaceId} was not found.";

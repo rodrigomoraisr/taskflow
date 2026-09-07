@@ -3,7 +3,7 @@
 Working plan. Kept in the repo so any session — mine, an AI assistant's, or a
 reviewer's — starts from the real state rather than from memory.
 
-**Status:** phase 0 and phases 1-11 complete locally. Phase 12 next. Release suite: 496 passing tests. Completed phases are committed, pushed and checked in remote CI; LinkedIn posts follow a separate publishing schedule.
+**Status:** phase 0 and phases 1-12 complete locally. Phase 13 next. Release suite: 516 passing tests. Completed phases are committed, pushed and checked in remote CI; LinkedIn posts follow a separate publishing schedule.
 
 ---
 
@@ -163,16 +163,22 @@ revoked by logout. See ADR 0005 for the accepted limits.
 
 ## Phase 12 — Observability, API hardening & concurrency
 
-- `ILogger` in `ExceptionMiddleware`. Right now an unexpected 500 leaves no trace
-  anywhere, which is the most serious operational gap in the project.
-- RFC 7807 `ProblemDetails` responses replacing the current `{ error: "..." }` shape.
-- Correlation id per request, surfaced in error responses and logs.
-- Health checks: `/health/live` and `/health/ready`, with readiness actually checking
-  the database.
-- Global rate limiting.
-- **Optimistic concurrency** (moved from 8.7): `rowversion` on `TaskItem` and
-  `Project`, mapped in the EF configuration, with `DbUpdateConcurrencyException`
-  translated to a 409.
+- ☑ Structured JSON logging, exception diagnostics and request timing; cancellation
+  and already-started responses handled without writing a misleading 500 body.
+- ☑ ProblemDetails (RFC 9457, successor to RFC 7807) replaces `{ error: "..." }`,
+  including validation, routing, authentication and rate-limit responses.
+- ☑ Bounded correlation IDs in response headers, error bodies and logging scopes.
+- ☑ `/health/live` and database-backed `/health/ready`, available without auth and
+  exempt from request budgets.
+- ☑ Global 120/minute remote-IP limit, additive to auth limits; 429/Retry-After.
+- ☑ PostgreSQL `xmin` shadow concurrency tokens on tasks/projects, EF conflict
+  translation to 409, and transactional rollback of losing activity entries.
+- ☑ Migration SQL and model snapshot verified; 516 Release tests pass (129 Domain,
+  147 Application, 240 integration).
+
+See ADR 0006 for the contract and tradeoffs. Client version preconditions, comment
+concurrency, distributed limits and centralized telemetry remain outside this
+phase. The token detects overlapping server writes, not stale client edit forms.
 
 ## Phase 13 — Docker & deployment
 

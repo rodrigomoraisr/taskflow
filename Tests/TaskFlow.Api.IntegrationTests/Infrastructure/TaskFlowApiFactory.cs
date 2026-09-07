@@ -22,6 +22,7 @@ public sealed class TaskFlowApiFactory : WebApplicationFactory<Program>
 
     public TimeProvider Clock { get; set; } = TimeProvider.System;
     public int AuthPermitLimit { get; set; } = 1000;
+    public int GlobalPermitLimit { get; set; } = 10000;
 
     public TaskFlowApiFactory(string connectionString)
     {
@@ -50,6 +51,7 @@ public sealed class TaskFlowApiFactory : WebApplicationFactory<Program>
         {
             services.AddSingleton(Clock);
             services.Configure<AuthRateLimitOptions>(options => options.PermitLimit = AuthPermitLimit);
+            services.Configure<GlobalRateLimitOptions>(options => options.PermitLimit = GlobalPermitLimit);
         });
     }
 }

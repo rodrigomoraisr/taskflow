@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging.Abstractions;
 using TaskFlow.Api.Middleware;
 using TaskFlow.Application.Common.Exceptions;
 using TaskFlow.Domain.Exceptions;
@@ -21,9 +22,10 @@ public class ExceptionMiddlewareTests
         Exception exception)
     {
         var middleware = new ExceptionMiddleware(
-            _ => throw exception);
+            _ => throw exception, NullLogger<ExceptionMiddleware>.Instance);
 
         var context = new DefaultHttpContext();
+        context.TraceIdentifier = "test-correlation";
         context.Response.Body = new MemoryStream();
 
         await middleware.InvokeAsync(context);

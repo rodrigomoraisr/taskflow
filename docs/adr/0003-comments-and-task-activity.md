@@ -87,9 +87,10 @@ administrators are outside that guarantee. The test fixture can still reset rows
 using Respawn. Database privileges/immutable external storage would require a
 separate operational design.
 
-Optimistic concurrency remains deferred to Phase 12. Simultaneous comment edits
-currently use the existing last-write-wins behavior, and activity ordering uses
-recording time rather than a global commit sequence.
+Phase 12 adds request-time concurrency protection for tasks/projects (ADR 0006),
+including rollback of a losing task activity entry. Simultaneous comment edits
+retain last-write-wins behavior, and activity ordering uses recording time rather
+than a global commit sequence.
 
 ## Verification
 

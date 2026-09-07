@@ -6,11 +6,13 @@ namespace TaskFlow.Api.Middleware;
 public class ExceptionMiddleware
 {
     private readonly RequestDelegate _next;
+    private readonly ILogger<ExceptionMiddleware> _logger;
 
     public ExceptionMiddleware(
-        RequestDelegate next)
+        RequestDelegate next, ILogger<ExceptionMiddleware> logger)
     {
         _next = next;
+        _logger = logger;
     }
 
     public async Task InvokeAsync(
@@ -20,10 +22,23 @@ public class ExceptionMiddleware
         {
             await _next(context);
         }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+        {
+            // The caller disconnected. There is no response to write and no server failure.
+            if (!context.Response.HasStarted)
+                context.Response.StatusCode = 499;
+        }
         catch (Exception ex)
         {
+            if (context.Response.HasStarted)
+            {
+                _logger.LogError(ex, "Request failed after the response started. CorrelationId: {CorrelationId}",
+                    context.TraceIdentifier);
+                throw;
+            }
             var (statusCode, message) = ex switch
             {
+                ConcurrencyConflictException => (StatusCodes.Status409Conflict, ex.Message),
                 CommentNotFoundException => (StatusCodes.Status404NotFound, ex.Message),
                 CommentOwnershipException => (StatusCodes.Status403Forbidden, ex.Message),
                 CommentAlreadyDeletedException => (StatusCodes.Status409Conflict, ex.Message),
@@ -81,19 +96,8 @@ public class ExceptionMiddleware
                 ProjectNotFoundException =>
                     (StatusCodes.Status404NotFound, ex.Message),
 
-                // All four "already deleted" domain exceptions map to 409: the
-                // state of the resource forbids the change, rather than the
-                // caller lacking rights.
-                //
-                // Only the project one is reachable through the API today —
-                // every repository filters soft-deleted rows out before an
-                // entity guard can fire, so the service raises a not-found
-                // first (proved by SoftDeleteVisibilityTests, which get 404
-                // everywhere). The other three are mapped anyway: leaving them
-                // out means the first repository method written without that
-                // filter turns a domain rule into a 500, and the mapping costs
-                // three lines. ExceptionMiddlewareTests covers all four
-                // directly, which is the only place they are reachable.
+                // Repositories normally hide deleted entities and yield 404.
+                // Keep the domain guards mapped for paths that do reach them.
                 ProjectAlreadyDeletedException =>
                     (StatusCodes.Status409Conflict, ex.Message),
 
@@ -122,20 +126,21 @@ public class ExceptionMiddleware
                     )
             };
 
-            context.Response.StatusCode = statusCode;
+            if (statusCode == StatusCodes.Status500InternalServerError)
+                _logger.LogError(ex, "Unhandled request failure. CorrelationId: {CorrelationId}",
+                    context.TraceIdentifier);
+            else
+                _logger.LogInformation("Request rejected with {StatusCode} ({FailureType}). CorrelationId: {CorrelationId}",
+                    statusCode, ex.GetType().Name, context.TraceIdentifier);
 
-            await context.Response.WriteAsJsonAsync(
-                new
-                {
-                    error = message
-                });
+            await ApiProblems.WriteAsync(context, statusCode, message, context.RequestAborted);
         }
     }
 
     /// <summary>
     /// The single place that decides what a caller is told about a workspace
     /// they cannot see. Both "not a member" and "no such workspace" render
-    /// through here, so the two responses are byte-identical and an outsider
+    /// through here, so their problem fields match (apart from request correlation) and an outsider
     /// cannot probe for which workspaces exist.
     /// </summary>
     private static string WorkspaceNotFound(Guid workspaceId)

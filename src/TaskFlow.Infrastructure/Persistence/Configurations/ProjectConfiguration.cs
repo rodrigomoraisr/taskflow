@@ -11,6 +11,8 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
         builder.ToTable("Projects");
         builder.HasKey(project => project.Id);
 
+        builder.Property<uint>("Version").IsRowVersion();
+
         builder.Property(project => project.WorkspaceId)
             .IsRequired();
 

@@ -21,13 +21,22 @@ using TaskFlow.Application.Projects;
 
 using TaskFlow.Application.Comments;
 using TaskFlow.Application.Activity;
+using TaskFlow.Api.Health;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Logging.AddJsonConsole(options => options.IncludeScopes = true);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
+builder.Services.AddProblemDetails(options =>
+    options.CustomizeProblemDetails = context =>
+        ApiProblems.Customize(context.HttpContext, context.ProblemDetails));
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"], timeout: TimeSpan.FromSeconds(5));
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddSingleton(TimeProvider.System);
@@ -37,8 +46,24 @@ builder.Services.AddSingleton<IRefreshTokenCodec, RefreshTokenCodec>();
 builder.Services.AddOptions<AuthRateLimitOptions>()
     .Bind(builder.Configuration.GetSection("AuthRateLimit"))
     .ValidateDataAnnotations().ValidateOnStart();
+builder.Services.AddOptions<GlobalRateLimitOptions>()
+    .Bind(builder.Configuration.GetSection("GlobalRateLimit"))
+    .ValidateDataAnnotations().ValidateOnStart();
 builder.Services.AddRateLimiter(options =>
 {
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+    {
+        var limits = context.RequestServices.GetRequiredService<IOptions<GlobalRateLimitOptions>>().Value;
+        return RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = limits.PermitLimit,
+                Window = TimeSpan.FromSeconds(limits.WindowSeconds),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            });
+    });
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.AddPolicy<string, AuthRateLimitPolicy>("auth");
     options.OnRejected = async (context, cancellationToken) =>
@@ -46,8 +71,8 @@ builder.Services.AddRateLimiter(options =>
         if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
             context.HttpContext.Response.Headers.RetryAfter =
                 Math.Ceiling(retryAfter.TotalSeconds).ToString(CultureInfo.InvariantCulture);
-        await context.HttpContext.Response.WriteAsJsonAsync(
-            new { error = "Too many authentication requests. Try again later." }, cancellationToken);
+        await ApiProblems.WriteAsync(context.HttpContext, StatusCodes.Status429TooManyRequests,
+            "Too many requests. Try again later.", cancellationToken);
     };
 });
 
@@ -140,6 +165,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.UseMiddleware<RequestObservabilityMiddleware>();
 app.Use(async (context, next) =>
 {
     if (context.Request.Path.StartsWithSegments("/auth"))
@@ -150,6 +176,8 @@ app.Use(async (context, next) =>
     await next(context);
 });
 app.UseMiddleware<ExceptionMiddleware>();
+app.UseStatusCodePages(context => ApiProblems.WriteAsync(context.HttpContext,
+    context.HttpContext.Response.StatusCode, cancellationToken: context.HttpContext.RequestAborted));
 
 app.UseHttpsRedirection();
 
@@ -159,6 +187,13 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+// Probes must stay usable when application clients exhaust their request budget.
+app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false })
+    .AllowAnonymous().DisableRateLimiting();
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+}).AllowAnonymous().DisableRateLimiting();
 
 app.Run();
 

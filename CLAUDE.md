@@ -92,7 +92,7 @@ Settled, and every tenant-isolation test asserts it:
 `UnauthorizedWorkspaceAccessException` and `WorkspaceNotFoundException` stay separate
 types so the application layer can tell the two apart. `ExceptionMiddleware` renders
 both through a single `WorkspaceNotFound` helper, so the two responses are
-byte-identical. A new workspace-scoped route inherits this for free by letting
+identical apart from per-request correlation metadata (ADR 0006). A new workspace-scoped route inherits this for free by letting
 `IWorkspaceAuthorizationService` throw — do not hand-roll a 403 for a non-member.
 
 ### Soft-deleted entities read as absent, not as conflicts
@@ -149,8 +149,8 @@ Two families, kept separate on purpose:
 exception type, add the mapping there in the same commit — an unmapped exception
 becomes a 500.
 
-Known debt: that middleware is a growing `switch` and has no logging. Both are on the
-roadmap; if you touch it, adding `ILogger` is welcome.
+The middleware logs unexpected exceptions and maps failures to ProblemDetails.
+Add mappings for new expected exceptions; never return infrastructure diagnostics.
 
 ## Style
 
@@ -304,3 +304,19 @@ dedicated limiter tests run the real policy with a small threshold. Password pol
 is minimum 15 Unicode scalar values and maximum 72 UTF-8 bytes for BCrypt, without
 composition rules. Legacy shorter passwords still authenticate. Logout/replay does
 not immediately revoke access JWTs; clients must serialize refresh requests.
+
+## Phase 12 — Observability and concurrency
+
+Read `docs/adr/0006-observability-hardening-and-concurrency.md` before changing the
+request pipeline or task/project persistence. Errors use ProblemDetails with a
+correlation ID, preserving the tenant 404 contract apart from request metadata.
+Keep correlation IDs bounded and logs free of request bodies, credentials and raw
+URLs. Health probes stay anonymous and exempt from rate limiting; readiness checks
+database connectivity. Global/auth IP budgets are additive and per instance.
+
+EF shadow `Version` properties map to PostgreSQL `xmin` on tasks/projects. Keep
+mutation reads tracked, translate EF conflicts through `EfUnitOfWork`, and never
+automatically retry a failed save. Activity and business changes must remain in the
+same transaction. Discard the failed request context rather than saving it again.
+There is no client version/If-Match contract yet, and comments have no concurrency
+token. Do not claim that old edit forms are protected.

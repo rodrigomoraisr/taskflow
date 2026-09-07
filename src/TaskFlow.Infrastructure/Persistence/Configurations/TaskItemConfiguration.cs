@@ -9,6 +9,7 @@ public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
     public void Configure(EntityTypeBuilder<TaskItem> builder)
     {
         builder.ToTable("tasks");
+        builder.Property<uint>("Version").IsRowVersion();
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Title)
             .HasMaxLength(200)
