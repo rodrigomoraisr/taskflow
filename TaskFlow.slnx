@@ -4,6 +4,7 @@
     <Project Path="src/TaskFlow.Application/TaskFlow.Application.csproj" />
     <Project Path="src/TaskFlow.Domain/TaskFlow.Domain.csproj" />
     <Project Path="src/TaskFlow.Infrastructure/TaskFlow.Infrastructure.csproj" />
+    <Project Path="src/TaskFlow.Migrator/TaskFlow.Migrator.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="Tests/TaskFlow.Api.IntegrationTests/TaskFlow.Api.IntegrationTests.csproj" />

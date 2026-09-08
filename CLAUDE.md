@@ -15,7 +15,7 @@ cleverer.
 ## Commands
 
 ```bash
-docker compose up -d                                   # PostgreSQL 17
+docker compose up -d postgres                          # PostgreSQL 17 for SDK development
 dotnet build
 dotnet test
 dotnet test --filter "FullyQualifiedName~TaskItem"
@@ -320,3 +320,16 @@ automatically retry a failed save. Activity and business changes must remain in 
 same transaction. Discard the failed request context rather than saving it again.
 There is no client version/If-Match contract yet, and comments have no concurrency
 token. Do not claim that old edit forms are protected.
+
+## Phase 13 — Containers and migrations
+
+Read `docs/adr/0007-container-runtime-and-migrations.md`. Full Compose startup uses
+a separate non-root migration executable before the API; never add automatic DDL
+to API startup. Keep the API's signing key out of the migration host and all image
+layers. Domain/Application dependencies remain unchanged by this outer executable.
+The local stack binds to loopback and retains the existing PostgreSQL volume.
+
+Run `bash scripts/smoke-containers.sh` after changing container behavior. It uses
+a unique project and disposable volume; cleanup must never target development data.
+CI also runs this script. Live hosting, TLS/proxy trust and restricted deployment
+database roles are Phase 14 work, not properties implied by Production environment.

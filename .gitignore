@@ -41,3 +41,6 @@ appsettings.Local.json
 
 # Docker
 docker-data/
+.env
+.env.*
+!.env.example

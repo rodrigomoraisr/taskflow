@@ -7,6 +7,15 @@ on:
     branches: [main]
 
 jobs:
+  containers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build and smoke-test containers
+        run: bash scripts/smoke-containers.sh
+
   build-and-test:
     runs-on: ubuntu-latest
 

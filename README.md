@@ -17,11 +17,41 @@ deliberately under-invested elsewhere. Both are documented below.
 
 ## Running it
 
-**Requirements:** .NET 10 SDK, Docker (for PostgreSQL).
+**Docker setup:** Docker with Compose v2. Use this to run the whole system without
+installing the .NET SDK on your host.
+
+```bash
+cp .env.example .env
+openssl rand -base64 48
+# Paste the generated value into TASKFLOW_JWT_KEY in .env, then:
+docker compose up --build -d --wait
+curl http://localhost:8080/health/ready
+```
+
+Compose starts PostgreSQL, applies migrations through a separate command, and
+starts the API only after that command succeeds. The API runs non-root in
+Production mode on loopback HTTP port 8080; OpenAPI is disabled in this mode.
+`.env` stays out of Git and Docker images. It is read by Compose, not by `dotnet run`.
+If you already have the development database volume, keep its original password
+(`postgres` in the original setup). Changing the environment value does not change
+an existing database password.
+
+```bash
+docker compose logs api migrate
+docker compose down       # Stops the stack; retains database data
+```
+
+Set `API_PORT`/`POSTGRES_PORT` in `.env` if host ports are occupied. Update the HTTP
+collection's host address to `http://localhost:8080` when using Docker. This is a
+local stack; public hosting requires the HTTPS/proxy/secret setup planned in Phase 14.
+See [ADR 0007](docs/adr/0007-container-runtime-and-migrations.md).
+
+**Development with the SDK:** .NET 10 SDK and Docker for PostgreSQL. Use this for
+editing/debugging the API and viewing its development OpenAPI document.
 
 ```bash
 # 1. Start PostgreSQL
-docker compose up -d
+docker compose up -d postgres
 
 # 2. Configure the JWT signing key (not committed — see Security below)
 cd src/TaskFlow.Api
@@ -41,6 +71,10 @@ OpenAPI is exposed at `/openapi/v1.json` in Development.
 # Tests — 516 of them; the integration suite starts a PostgreSQL container,
 # so Docker must be running.
 dotnet test
+
+# Separate container smoke checks (Docker Compose, Python 3 and curl required)
+# Creates and cleans up an isolated database; leaves the development volume alone.
+bash scripts/smoke-containers.sh
 ```
 
 ---
@@ -49,6 +83,9 @@ dotnet test
 
 Four projects, with dependencies pointing inward. `TaskFlow.Domain` references
 nothing.
+
+`TaskFlow.Migrator` is a separate deployment executable referencing Infrastructure;
+it applies migrations without booting the API or requiring a signing key.
 
 ```
 TaskFlow.Api             controllers, exception middleware, JWT wiring,
@@ -346,8 +383,8 @@ These are decisions, not omissions.
 
 The working plan is in [`docs/ROADMAP.md`](docs/ROADMAP.md). The immediate queue:
 
-1. Phase 13: containerize the API and prepare deployment.
-2. Phase 14: continuous deployment.
+1. Phase 14: publish images and deploy to a live host.
+2. Phase 15: documentation and portfolio polish.
 
 ---
 

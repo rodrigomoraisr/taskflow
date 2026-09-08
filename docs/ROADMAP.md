@@ -3,7 +3,7 @@
 Working plan. Kept in the repo so any session — mine, an AI assistant's, or a
 reviewer's — starts from the real state rather than from memory.
 
-**Status:** phase 0 and phases 1-12 complete locally. Phase 13 next. Release suite: 516 passing tests. Completed phases are committed, pushed and checked in remote CI; LinkedIn posts follow a separate publishing schedule.
+**Status:** phase 0 and phases 1-13 complete locally. Phase 14 next. Release suite: 516 passing tests, plus container smoke checks. Completed phases are committed, pushed and checked in remote CI; LinkedIn posts follow a separate publishing schedule.
 
 ---
 
@@ -182,11 +182,17 @@ phase. The token detects overlapping server writes, not stale client edit forms.
 
 ## Phase 13 — Docker & deployment
 
-- `Dockerfile` for the API, multi-stage, non-root user.
-- `docker-compose.yml` that actually runs the whole system, not just PostgreSQL.
-  Today `docker compose up` starts a database and nothing else.
-- Migrations on startup versus a separate migration step — pick one and write down
-  why.
+- ☑ Multi-stage .NET 10 Dockerfile with non-root API and migration runtime targets.
+- ☑ Full Compose stack: healthy PostgreSQL → successful migrations → healthy API.
+- ☑ Separate migration executable; no automatic migrations during API startup.
+- ☑ Runtime secrets, ignored environment/build files, loopback ports and read-only
+  application containers. Existing development database volume is retained.
+- ☑ Isolated container smoke checks in CI: failure gate, repeated migrations,
+  non-root execution, missing key, auth/task flow, outage probes and restart persistence.
+- ☑ Setup documentation and ADR 0007 explaining deployment boundaries and tradeoffs.
+
+Image publishing, public HTTPS/proxy configuration and live deployment remain
+Phase 14. Local Compose is not the final public production configuration.
 
 ## Phase 14 — CD
 

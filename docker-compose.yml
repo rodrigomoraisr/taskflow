@@ -1,19 +1,64 @@
 services:
   postgres:
     image: postgres:17
-    container_name: taskflow-postgres
     restart: unless-stopped
 
     environment:
       POSTGRES_DB: taskflow
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
 
     ports:
-      - "5432:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
 
     volumes:
       - postgres-data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d taskflow"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    init: true
+    build:
+      context: .
+      target: migrations
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=taskflow;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres};GSS Encryption Mode=Disable"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+
+  api:
+    init: true
+    build:
+      context: .
+      target: api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=taskflow;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres};GSS Encryption Mode=Disable"
+      Jwt__Key: ${TASKFLOW_JWT_KEY:-}
+    ports:
+      - "127.0.0.1:${API_PORT:-8080}:8080"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    read_only: true
+    ulimits:
+      core: 0
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
 
 volumes:
   postgres-data:
