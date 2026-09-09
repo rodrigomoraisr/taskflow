@@ -71,6 +71,17 @@ This workflow publishes images only; it does not deploy or migrate production.
 
 ## Remaining guided setup
 
+Proxy diagnosis: the deployed `6f3d07e` image and the three temporary settings
+(`ReverseProxy__Enabled=true`, `ReverseProxy__KnownProxies__0=127.0.0.1`,
+`Logging__LogLevel__Microsoft.AspNetCore.HttpOverrides=Debug`) were confirmed, but
+the marked application request produced no unknown-proxy log. This does not prove
+that forwarding is correct. After deploying the diagnostics change, temporarily
+set `ReverseProxy__Diagnostics=true`: the first ten `/health/live` requests per
+process log the socket peer, effective client IP/scheme and header-presence flags.
+No raw header values, tokens, bodies or query strings are logged or returned.
+Remove this setting and the temporary debug logging after verification. Loopback
+trust is still provisional until the observed peer and header behavior are checked.
+
 - HTTPS-only and minimum TLS 1.2 for both app/SCM confirmed in the portal;
   an external HTTP request returned a 301 HTTPS redirect.
 - Deploy the proxy-handling code (ADR 0008), verify Azure's immediate proxy peer and

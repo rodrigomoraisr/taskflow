@@ -142,6 +142,7 @@ builder.Services
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+app.UseMiddleware<ProxyDiagnosticsMiddleware>();
 // Establish scheme/client address before redirects, logging and IP rate limits.
 app.UseForwardedHeaders();
 
