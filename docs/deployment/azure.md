@@ -69,6 +69,27 @@ or production secrets are required. Commit tags identify source revisions; use
 the digest for an exact artifact because rerunning a build can update a tag.
 This workflow publishes images only; it does not deploy or migrate production.
 
+## GitHub deployment identity
+
+The user created `id-taskflow-github` with federated credential
+`github-taskflow-production`. Its issuer is
+`https://token.actions.githubusercontent.com`, audience is
+`api://AzureADTokenExchange`, and expected subject is
+`repo:rodrigomoraisr@53228228/taskflow@1271757589:environment:production`.
+GitHub's repository OIDC settings now enable `use_immutable_subject` with the
+default template. The `production` environment permits only branch `main` and
+contains `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID` variables.
+Use the user-assigned identity's client ID, not its principal ID.
+
+The user confirmed Website Contributor on this Web App and Key Vault Secrets User
+on the individual `taskflow-db-migrations` secret for that identity. The runtime
+identity and its secret permissions remain separate.
+
+Run **Actions → Verify Azure access → Run workflow → main** to test actual OIDC
+sign-in and reads of the Web App and migration secret. The workflow suppresses
+secret output and does not change the app or database. Success proves those reads,
+not a deployment or migration. A serialized release workflow remains to be added.
+
 ## Remaining guided setup
 
 Proxy diagnosis: the deployed `6f3d07e` image and the three temporary settings
@@ -79,17 +100,23 @@ that forwarding is correct. After deploying the diagnostics change, temporarily
 set `ReverseProxy__Diagnostics=true`: the first ten `/health/live` requests per
 process log the socket peer, effective client IP/scheme and header-presence flags.
 No raw header values, tokens, bodies or query strings are logged or returned.
-Remove this setting and the temporary debug logging after verification. Loopback
-trust is still provisional until the observed peer and header behavior are checked.
+On 2026-09-09, live diagnostics identified the immediate peer as
+`::ffff:169.254.130.1`. Configuring `ReverseProxy__KnownProxies__0=169.254.130.1`
+restored the caller address and HTTPS scheme. A baseline request and another with
+forged `X-Forwarded-For: 192.0.2.123` and `X-Forwarded-Proto: http` both produced
+the same effective caller IP and `https` in the logs at 15:13:50–51 UTC. No caller
+IP is retained in this runbook. This verifies the observed Azure ingress path;
+recheck peer trust after hosting/network changes.
+The user confirmed removal of the diagnostic and temporary debug settings.
 
 - HTTPS-only and minimum TLS 1.2 for both app/SCM confirmed in the portal;
   an external HTTP request returned a 301 HTTPS redirect.
-- Deploy the proxy-handling code (ADR 0008), verify Azure's immediate proxy peer and
-  header behavior, then configure `ReverseProxy__Enabled=true` and
-  `ReverseProxy__KnownProxies__0=<verified-peer-IP>` (additional peers use index 1,
-  etc.). Until this verification, keep forwarding disabled. Never use the automatic
+- Keep `ReverseProxy__Enabled=true` and
+  `ReverseProxy__KnownProxies__0=169.254.130.1` for the verified deployment.
+  Remove `ReverseProxy__Diagnostics` and the temporary HttpOverrides debug setting.
+  Never use the automatic
   `ASPNETCORE_FORWARDEDHEADERS_ENABLED`/`DOTNET_FORWARDEDHEADERS_ENABLED` shortcut.
-- Set up GitHub-to-Azure federated identity and a serialized deployment workflow.
+- Verify GitHub-to-Azure federated identity and add a serialized deployment workflow.
 - Automate future owner migrations and explicit runtime grants in the pipeline.
 - Pin deployment to the selected image digest and repeat verification after updates.
 - Use `/health/live` for recurring probes; repeated database readiness probes can

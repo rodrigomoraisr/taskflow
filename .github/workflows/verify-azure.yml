@@ -1,0 +1,33 @@
+name: Verify Azure access
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AZURE_CORE_OUTPUT: none
+    steps:
+      - name: Sign in through GitHub OIDC
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Verify access to the Web App
+        run: |
+          az webapp show --resource-group rg-taskflow-prod --name taskflow-rodrigo-api --output none
+          echo 'Web App read access verified.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Verify access to the migration secret
+        run: |
+          az keyvault secret show --vault-name kv-taskflow-rodrigo --name taskflow-db-migrations --output none
+          echo 'Migration secret read access verified; its value was not printed.' >> "$GITHUB_STEP_SUMMARY"

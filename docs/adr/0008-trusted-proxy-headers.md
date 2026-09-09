@@ -1,6 +1,6 @@
 # ADR 0008: Explicit proxy trust
 
-Status: Accepted for implementation; Azure configuration and live verification pending.
+Status: Accepted; observed Azure ingress verified on 2026-09-09.
 
 Azure terminates TLS and forwards traffic to the container. Forwarded client
 addresses affect both IP rate limiters; accepting arbitrary client-supplied values
@@ -23,7 +23,10 @@ Tests use the real middleware and authentication rate-limit policy to check trus
 and untrusted peers, disabled behavior, IPv4-mapped peers, forged address prefixes,
 separate client budgets, scheme handling, unchanged hosts and invalid configuration.
 
-This commit prepares the code; it does not establish the Azure proxy identity or
-claim that the currently deployed image processes forwarded headers.
+Live verification subsequently identified the peer as `::ffff:169.254.130.1`.
+After configuring its IPv4 equivalent, normal and forged-header health requests
+retained the same effective caller IP and HTTPS scheme. See the deployment runbook
+for the active settings. This observation is deployment-specific, not a guarantee
+that Azure's proxy address will remain stable or apply to other apps.
 
 Reference: [ASP.NET Core proxy configuration](https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/proxy-load-balancer?view=aspnetcore-10.0).
