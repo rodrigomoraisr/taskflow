@@ -53,7 +53,7 @@ jobs:
       - name: Record previous image
         run: |
           previous="$(az webapp sitecontainers show --resource-group rg-taskflow-prod \
-            --name taskflow-rodrigo-api --container-name main --query properties.image --output tsv)"
+            --name taskflow-rodrigo-api --container-name main --query image --output tsv)"
           test -n "$previous"
           printf 'Previous image: `%s`\n' "$previous" >> "$GITHUB_STEP_SUMMARY"
       - name: Run database migrations and runtime grants
@@ -84,7 +84,7 @@ jobs:
             --image "$API_IMAGE_REF" --target-port 8080 --is-main true --output none
           az webapp restart --resource-group rg-taskflow-prod --name taskflow-rodrigo-api --output none
           actual="$(az webapp sitecontainers show --resource-group rg-taskflow-prod \
-            --name taskflow-rodrigo-api --container-name main --query properties.image --output tsv)"
+            --name taskflow-rodrigo-api --container-name main --query image --output tsv)"
           test "$actual" = "$API_IMAGE_REF"
       - name: Verify public health
         run: |
