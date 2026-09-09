@@ -58,6 +58,14 @@ compatible with any still-running version during a rollout.
 
 ## Local runtime boundaries
 
+Phase 14 adds an opt-in `TASKFLOW_APPLY_RUNTIME_GRANTS=true` step to the migration
+host. It executes the embedded deployment grant script only after EF migrations
+succeed, and returns failure if permissions cannot be applied. The script remains
+explicit and targets the hosted `neondb`/`taskflow_app` setup; it grants neither
+DDL nor migration-history access. Local Compose leaves it off. The container
+smoke test separately exercises the production script on disposable PostgreSQL,
+including missing-role failure, repeat runs, and denied privileges.
+
 Compose publishes API and database ports only on `127.0.0.1`, defaults 8080/5432.
 `API_PORT` and `POSTGRES_PORT` may change host ports; container connections always
 use `postgres:5432`. The existing `postgres-data` volume name is preserved, and the

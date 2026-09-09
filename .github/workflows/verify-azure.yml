@@ -14,8 +14,6 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    env:
-      AZURE_CORE_OUTPUT: none
     steps:
       - name: Sign in through GitHub OIDC
         uses: azure/login@v3

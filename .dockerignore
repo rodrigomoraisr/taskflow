@@ -13,7 +13,9 @@
 **/*.key
 Tests
 TestResults
-docs
+docs/**
+!docs/deployment/
+!docs/deployment/runtime-permissions.sql
 scripts
 publish
 docker-data

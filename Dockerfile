@@ -11,6 +11,7 @@ COPY src/TaskFlow.Migrator/TaskFlow.Migrator.csproj src/TaskFlow.Migrator/
 RUN dotnet restore src/TaskFlow.Api/TaskFlow.Api.csproj \
     && dotnet restore src/TaskFlow.Migrator/TaskFlow.Migrator.csproj
 COPY src/ src/
+COPY docs/deployment/runtime-permissions.sql docs/deployment/runtime-permissions.sql
 
 FROM build AS publish-api
 RUN dotnet publish src/TaskFlow.Api/TaskFlow.Api.csproj \

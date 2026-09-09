@@ -7,5 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../TaskFlow.Infrastructure/TaskFlow.Infrastructure.csproj" />
+    <EmbeddedResource Include="../../docs/deployment/runtime-permissions.sql" LogicalName="RuntimePermissions.sql" />
   </ItemGroup>
 </Project>

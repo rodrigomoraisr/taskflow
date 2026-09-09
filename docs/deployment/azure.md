@@ -67,7 +67,9 @@ The workflow also runs for `v*` tags. It publishes Linux AMD64 images:
 Publication uses the job's `GITHUB_TOKEN` with `packages: write`; no registry PAT
 or production secrets are required. Commit tags identify source revisions; use
 the digest for an exact artifact because rerunning a build can update a tag.
-This workflow publishes images only; it does not deploy or migrate production.
+On `main`, publication now calls the production deployment job after both images
+succeed. Tag runs publish only. Starting **Publish containers** on `main` is an
+explicit production release; ordinary pushes run CI without deploying.
 
 ## GitHub deployment identity
 
@@ -83,12 +85,36 @@ Use the user-assigned identity's client ID, not its principal ID.
 
 The user confirmed Website Contributor on this Web App and Key Vault Secrets User
 on the individual `taskflow-db-migrations` secret for that identity. The runtime
-identity and its secret permissions remain separate.
+identity and its secret permissions remain separate. The deploy job reads the
+migration secret directly from Key Vault after Azure sign-in; no database secret
+is copied into GitHub.
 
 Run **Actions → Verify Azure access → Run workflow → main** to test actual OIDC
 sign-in and reads of the Web App and migration secret. The workflow suppresses
 secret output and does not change the app or database. Success proves those reads,
-not a deployment or migration. A serialized release workflow remains to be added.
+not a deployment or migration. Run 34374863408 verified all three operations on
+2026-09-09. A serialized release job is called by `Publish containers` on `main`.
+It consumes digest artifacts returned by the two builds in that run and attempt,
+refuses a source revision that is no longer the head of `main`, and reads the
+migration secret from Key Vault. The separate migration container applies EF
+migrations and the embedded `runtime-permissions.sql` when
+`TASKFLOW_APPLY_RUNTIME_GRANTS=true`; a failure in either stops the rollout.
+Local Compose omits this flag because it uses its development database role.
+
+The release then records the previous image, updates the `main` site container
+to the API digest, restarts the app, verifies the configured image, and waits for
+public liveness/readiness HTTP 200 responses. Readiness checks here are bounded
+release checks, not recurring monitoring. Health confirms the service and database
+are reachable; it is not an authenticated business-flow test or a runtime revision
+attestation. Review App Service container logs if rollout identity is uncertain.
+
+If a run fails, inspect its failed step. Rerun all jobs (or start a new publication)
+so both digest artifacts belong to the current run attempt. Schema changes must
+remain compatible with the API serving during migration. There is no automatic
+database downgrade or API rollback: if necessary, redeploy the recorded previous
+image after checking schema compatibility. B1 has no deployment slot here, so a
+restart can interrupt requests. Concurrency prevents overlapping releases; GitHub
+may replace a pending release with a newer one.
 
 ## Remaining guided setup
 
@@ -116,9 +142,9 @@ The user confirmed removal of the diagnostic and temporary debug settings.
   Remove `ReverseProxy__Diagnostics` and the temporary HttpOverrides debug setting.
   Never use the automatic
   `ASPNETCORE_FORWARDEDHEADERS_ENABLED`/`DOTNET_FORWARDEDHEADERS_ENABLED` shortcut.
-- Verify GitHub-to-Azure federated identity and add a serialized deployment workflow.
-- Automate future owner migrations and explicit runtime grants in the pipeline.
-- Pin deployment to the selected image digest and repeat verification after updates.
+- Run **Publish containers** on `main` and verify its production deployment job.
+- Update the explicit grant script whenever a migration adds a runtime table.
+- Repeat live verification after updates.
 - Use `/health/live` for recurring probes; repeated database readiness probes can
   prevent Neon from suspending. The app rejects unresolved JWT Key Vault references
   at startup instead of treating the reference text as a signing secret.

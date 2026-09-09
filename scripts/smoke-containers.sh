@@ -55,6 +55,32 @@ test -z "$("${compose[@]}" exec -T api dotnet --list-sdks)"
 
 "${compose[@]}" run --rm --no-deps -T migrate > "$scratch/migration.log"
 python3 -c 'import pathlib,sys; assert "Applying 0 pending migration(s)." in pathlib.Path(sys.argv[1]).read_text()' "$scratch/migration.log"
+
+# Exercise the production grant script in an isolated database in this disposable cluster.
+"${compose[@]}" exec -T postgres psql -U postgres -d taskflow -v ON_ERROR_STOP=1 \
+    -c 'CREATE DATABASE neondb;' >/dev/null
+grant_connection="Host=postgres;Port=5432;Database=neondb;Username=postgres;Password=$POSTGRES_PASSWORD;GSS Encryption Mode=Disable"
+if "${compose[@]}" run --rm --no-deps -T \
+    -e "ConnectionStrings__DefaultConnection=$grant_connection" \
+    -e TASKFLOW_APPLY_RUNTIME_GRANTS=true migrate; then
+    echo "Expected migration command to fail when runtime grants cannot be applied." >&2
+    exit 1
+fi
+"${compose[@]}" exec -T postgres psql -U postgres -d neondb -v ON_ERROR_STOP=1 \
+    -c 'CREATE ROLE taskflow_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;' >/dev/null
+for attempt in 1 2; do
+    "${compose[@]}" run --rm --no-deps -T \
+        -e "ConnectionStrings__DefaultConnection=$grant_connection" \
+        -e TASKFLOW_APPLY_RUNTIME_GRANTS=true migrate
+done
+grants_valid="$("${compose[@]}" exec -T postgres psql -U postgres -d neondb -At -v ON_ERROR_STOP=1 -c \
+    "SELECT has_table_privilege('taskflow_app', 'public.tasks', 'SELECT')
+        AND has_table_privilege('taskflow_app', 'public.tasks', 'UPDATE')
+        AND has_table_privilege('taskflow_app', 'public.task_activities', 'INSERT')
+        AND NOT has_table_privilege('taskflow_app', 'public.tasks', 'DELETE')
+        AND NOT has_table_privilege('taskflow_app', 'public.task_activities', 'UPDATE')
+        AND NOT has_table_privilege('taskflow_app', 'public.\"__EFMigrationsHistory\"', 'SELECT');")"
+test "$grants_valid" = t
 cat > "$scratch/invalid-api.yml" <<'YAML'
 services:
   api:

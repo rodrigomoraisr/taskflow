@@ -1,0 +1,105 @@
+name: Deploy production
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      API_IMAGE: ghcr.io/rodrigomoraisr/taskflow-api
+      MIGRATION_IMAGE: ghcr.io/rodrigomoraisr/taskflow-migrations
+      API_URL: https://taskflow-rodrigo-api-etgcbgg6a0bseybd.eastus-01.azurewebsites.net
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: digest-*-${{ github.run_attempt }}
+          merge-multiple: true
+          path: digests
+      - name: Validate build digests and source revision
+        id: images
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          api_digest="$(cat digests/api.digest)"
+          migration_digest="$(cat digests/migrations.digest)"
+          [[ "$api_digest" =~ ^sha256:[a-f0-9]{64}$ ]]
+          [[ "$migration_digest" =~ ^sha256:[a-f0-9]{64}$ ]]
+          echo "api=$API_IMAGE@$api_digest" >> "$GITHUB_OUTPUT"
+          echo "migrations=$MIGRATION_IMAGE@$migration_digest" >> "$GITHUB_OUTPUT"
+          printf 'Source: `%s`\nAPI: `%s@%s`\nMigrations: `%s@%s`\n' \
+            "$GITHUB_SHA" "$API_IMAGE" "$api_digest" "$MIGRATION_IMAGE" "$migration_digest" >> "$GITHUB_STEP_SUMMARY"
+      - name: Sign in through GitHub OIDC
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Record previous image
+        run: |
+          previous="$(az webapp sitecontainers show --resource-group rg-taskflow-prod \
+            --name taskflow-rodrigo-api --container-name main --query properties.image --output tsv)"
+          test -n "$previous"
+          printf 'Previous image: `%s`\n' "$previous" >> "$GITHUB_STEP_SUMMARY"
+      - name: Run database migrations and runtime grants
+        env:
+          MIGRATION_IMAGE_REF: ${{ steps.images.outputs.migrations }}
+        run: |
+          set -euo pipefail
+          export ConnectionStrings__DefaultConnection
+          ConnectionStrings__DefaultConnection="$(az keyvault secret show \
+            --vault-name kv-taskflow-rodrigo --name taskflow-db-migrations --query value --output tsv)"
+          test -n "$ConnectionStrings__DefaultConnection"
+          escaped="${ConnectionStrings__DefaultConnection//'%'/'%25'}"
+          escaped="${escaped//$'\r'/'%0D'}"
+          escaped="${escaped//$'\n'/'%0A'}"
+          echo "::add-mask::$escaped"
+          docker run --rm --init --read-only --tmpfs /tmp --cap-drop ALL \
+            --security-opt no-new-privileges --env ConnectionStrings__DefaultConnection \
+            --env TASKFLOW_APPLY_RUNTIME_GRANTS=true "$MIGRATION_IMAGE_REF"
+          unset ConnectionStrings__DefaultConnection escaped
+          echo 'Migrations and runtime grants completed.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Roll out API by digest
+        env:
+          API_IMAGE_REF: ${{ steps.images.outputs.api }}
+        run: |
+          set -euo pipefail
+          az webapp sitecontainers update --resource-group rg-taskflow-prod \
+            --name taskflow-rodrigo-api --container-name main \
+            --image "$API_IMAGE_REF" --target-port 8080 --is-main true --output none
+          az webapp restart --resource-group rg-taskflow-prod --name taskflow-rodrigo-api --output none
+          actual="$(az webapp sitecontainers show --resource-group rg-taskflow-prod \
+            --name taskflow-rodrigo-api --container-name main --query properties.image --output tsv)"
+          test "$actual" = "$API_IMAGE_REF"
+      - name: Verify public health
+        run: |
+          set -euo pipefail
+          for path in live ready; do
+            healthy=false
+            for attempt in {1..30}; do
+              status="$(curl --silent --output /dev/null --write-out '%{http_code}' \
+                --connect-timeout 5 --max-time 10 "$API_URL/health/$path")" || status=000
+              if [ "$status" = 200 ]; then healthy=true; break; fi
+              sleep 10
+            done
+            if [ "$healthy" != true ]; then
+              echo "::error::/health/$path did not become healthy. Inspect the deployment; no automatic rollback was attempted."
+              exit 1
+            fi
+            echo "/health/$path returned HTTP 200." >> "$GITHUB_STEP_SUMMARY"
+          done

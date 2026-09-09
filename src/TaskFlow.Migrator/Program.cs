@@ -25,6 +25,16 @@ try
     var pending = (await db.Database.GetPendingMigrationsAsync(cancellation.Token)).ToArray();
     Console.WriteLine($"Applying {pending.Length} pending migration(s).");
     await db.Database.MigrateAsync(cancellation.Token);
+    if (Environment.GetEnvironmentVariable("TASKFLOW_APPLY_RUNTIME_GRANTS") == "true")
+    {
+        await using var script = System.Reflection.Assembly.GetExecutingAssembly()
+            .GetManifestResourceStream("RuntimePermissions.sql")
+            ?? throw new InvalidOperationException("Runtime permissions script is missing.");
+        using var reader = new StreamReader(script);
+        var sql = await reader.ReadToEndAsync(cancellation.Token);
+        await db.Database.ExecuteSqlRawAsync(sql, cancellation.Token);
+        Console.WriteLine("Runtime database permissions applied successfully.");
+    }
     Console.WriteLine("Database migrations completed successfully.");
     return 0;
 }
