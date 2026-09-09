@@ -26,6 +26,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddTrustedProxyHeaders(builder.Configuration);
 builder.Logging.AddJsonConsole(options => options.IncludeScopes = true);
 
 // Add services to the container.
@@ -141,6 +142,8 @@ builder.Services
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+// Establish scheme/client address before redirects, logging and IP rate limits.
+app.UseForwardedHeaders();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

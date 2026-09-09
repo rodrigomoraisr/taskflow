@@ -68,7 +68,7 @@ dotnet run
 OpenAPI is exposed at `/openapi/v1.json` in Development.
 
 ```bash
-# Tests — 523 of them; the integration suite starts a PostgreSQL container,
+# Tests — 533 of them; the integration suite starts a PostgreSQL container,
 # so Docker must be running.
 dotnet test
 
@@ -260,13 +260,13 @@ it down. A client that disconnects should not leave a query running.
 
 ## Tests
 
-523 tests across three projects, mirroring the layers.
+533 tests across three projects, mirroring the layers.
 
 | Project | Count | What it covers |
 | --- | --- | --- |
 | `TaskFlow.Domain.Tests` | 129 | Entity invariants, every status transition, guards on soft-deleted entities — one test per mutating method rather than one representative test |
 | `TaskFlow.Application.Tests` | 147 | Service orchestration with substituted repositories and the **real** authorization services, plus the check-before-load audit |
-| `TaskFlow.Api.IntegrationTests` | 247 | Tenant isolation over real HTTP, repository filters, database constraints, lifecycle journeys, comments/activity, task queries, authentication races/lockouts, signing-key validation, correlated errors, health checks, rate limits and concurrency rollback |
+| `TaskFlow.Api.IntegrationTests` | 257 | Tenant isolation over real HTTP, repository filters, database constraints, lifecycle journeys, comments/activity, task queries, authentication races/lockouts, signing-key validation, trusted proxy handling, correlated errors, health checks, rate limits and concurrency rollback |
 
 The lifecycle journey registers and logs in a user, creates a new workspace,
 project and task, then starts, completes and reopens the task. Each transition

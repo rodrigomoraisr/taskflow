@@ -346,3 +346,8 @@ local Compose overrides it with database readiness. JWT validation must reject
 unresolved Key Vault reference text even when it exceeds the minimum key length.
 Image publication alone does not complete HTTPS/proxy configuration or runtime
 database grants. Keep Phase 14 in progress until those and deployment are verified.
+
+Read ADR 0008 before changing forwarded-header handling. It is opt-in with explicit
+proxy IPs and one forwarded hop, before redirects and rate limiting. Never enable
+the framework's trust-all environment shortcut or infer trusted proxies from app
+outbound IPs. Production proxy identity/header behavior must be verified separately.
