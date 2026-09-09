@@ -38,6 +38,8 @@ services:
     security_opt: [no-new-privileges:true]
 
   api:
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "--max-time", "2", "http://localhost:8080/health/ready"]
     init: true
     build:
       context: .

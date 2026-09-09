@@ -81,7 +81,10 @@ addresses, database TLS and runtime secrets. Those settings depend on the Phase 
 host and are intentionally not guessed here. Do not expose this local Compose
 configuration directly as a public production deployment.
 
-The API image health check calls `/health/ready`; PostgreSQL uses `pg_isready`.
+As amended during Phase 14, the API image health check calls `/health/live`
+so routine probes do not keep a scale-to-zero hosted database awake. Local Compose
+overrides this with `/health/ready` to preserve its database readiness gate.
+PostgreSQL uses `pg_isready`.
 Liveness remains independent of database availability. Compose does not restart
 an unhealthy but running container automatically; readiness is a signal for an
 operator or orchestrator, not a recovery policy. `restart: unless-stopped` handles

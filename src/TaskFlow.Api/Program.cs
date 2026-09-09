@@ -109,24 +109,7 @@ builder.Services.AddDbContext<TaskFlowDbContext>(options =>
 // here rather than let it start and issue tokens anyone could forge. In
 // development it comes from user secrets; in CI and production from Jwt__Key.
 // See the Security section of README.md.
-var jwtKey = builder.Configuration["Jwt:Key"];
-
-if (string.IsNullOrWhiteSpace(jwtKey))
-{
-    throw new InvalidOperationException(
-        "Jwt:Key is not configured. In development set it with "
-        + "dotnet user-secrets set \"Jwt:Key\" \"<random value>\"; "
-        + "elsewhere supply the Jwt__Key environment variable.");
-}
-
-if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
-{
-    throw new InvalidOperationException(
-        "Jwt:Key is too short. HMAC-SHA256 signing requires at least 32 bytes "
-        + "(256 bits), but the configured key is only "
-        + Encoding.UTF8.GetByteCount(jwtKey)
-        + " bytes.");
-}
+var jwtKey = JwtSigningKey.Validate(builder.Configuration["Jwt:Key"]);
 
 if (!int.TryParse(builder.Configuration["Jwt:ExpirationMinutes"], out var accessMinutes)
     || accessMinutes is < 1 or > 15)

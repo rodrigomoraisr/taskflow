@@ -38,5 +38,5 @@ ENV ASPNETCORE_HTTP_PORTS=8080
 EXPOSE 8080
 USER $APP_UID
 HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=5 \
-    CMD curl --fail --silent --show-error --max-time 2 http://localhost:8080/health/ready || exit 1
+    CMD curl --fail --silent --show-error --max-time 2 http://localhost:8080/health/live || exit 1
 ENTRYPOINT ["dotnet", "TaskFlow.Api.dll"]

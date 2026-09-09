@@ -3,7 +3,7 @@
 Working plan. Kept in the repo so any session — mine, an AI assistant's, or a
 reviewer's — starts from the real state rather than from memory.
 
-**Status:** phase 0 and phases 1-13 complete locally. Phase 14 next. Release suite: 516 passing tests, plus container smoke checks. Completed phases are committed, pushed and checked in remote CI; LinkedIn posts follow a separate publishing schedule.
+**Status:** phase 0 and phases 1-13 complete locally. Phase 14 in progress. Completed phases are committed, pushed and checked in remote CI; LinkedIn posts follow a separate publishing schedule.
 
 ---
 
@@ -199,7 +199,8 @@ Phase 14. Local Compose is not the final public production configuration.
 CI already exists from phase 0.3. This adds deployment.
 
 - Build and publish a container image on tag.
-- Deploy to a free-tier host. A live URL in the README is worth more than any
+- Deploy to Azure App Service B1 with Neon Free, within the R$120/month budget.
+  Follow the [deployment runbook](deployment/azure.md). A live URL in the README is worth more than any
   amount of local setup instructions.
 
 ## Phase 15 — Documentation & portfolio polish

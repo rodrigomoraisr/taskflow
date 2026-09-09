@@ -68,7 +68,7 @@ dotnet run
 OpenAPI is exposed at `/openapi/v1.json` in Development.
 
 ```bash
-# Tests — 516 of them; the integration suite starts a PostgreSQL container,
+# Tests — 523 of them; the integration suite starts a PostgreSQL container,
 # so Docker must be running.
 dotnet test
 
@@ -260,13 +260,13 @@ it down. A client that disconnects should not leave a query running.
 
 ## Tests
 
-516 tests across three projects, mirroring the layers.
+523 tests across three projects, mirroring the layers.
 
 | Project | Count | What it covers |
 | --- | --- | --- |
 | `TaskFlow.Domain.Tests` | 129 | Entity invariants, every status transition, guards on soft-deleted entities — one test per mutating method rather than one representative test |
 | `TaskFlow.Application.Tests` | 147 | Service orchestration with substituted repositories and the **real** authorization services, plus the check-before-load audit |
-| `TaskFlow.Api.IntegrationTests` | 240 | Tenant isolation over real HTTP, repository filters, database constraints, lifecycle journeys, comments/activity, task queries, authentication races/lockouts, correlated errors, health checks, rate limits and concurrency rollback |
+| `TaskFlow.Api.IntegrationTests` | 247 | Tenant isolation over real HTTP, repository filters, database constraints, lifecycle journeys, comments/activity, task queries, authentication races/lockouts, signing-key validation, correlated errors, health checks, rate limits and concurrency rollback |
 
 The lifecycle journey registers and logs in a user, creates a new workspace,
 project and task, then starts, completes and reopens the task. Each transition
@@ -383,7 +383,7 @@ These are decisions, not omissions.
 
 The working plan is in [`docs/ROADMAP.md`](docs/ROADMAP.md). The immediate queue:
 
-1. Phase 14: publish images and deploy to a live host.
+1. Phase 14 (in progress): publish images and deploy to Azure App Service with Neon. See the [deployment runbook](docs/deployment/azure.md).
 2. Phase 15: documentation and portfolio polish.
 
 ---

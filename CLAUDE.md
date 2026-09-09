@@ -333,3 +333,16 @@ Run `bash scripts/smoke-containers.sh` after changing container behavior. It use
 a unique project and disposable volume; cleanup must never target development data.
 CI also runs this script. Live hosting, TLS/proxy trust and restricted deployment
 database roles are Phase 14 work, not properties implied by Production environment.
+
+## Phase 14 — Deployment preparation
+
+See `docs/deployment/azure.md` for the current setup and remaining steps. The
+publishing workflow reuses CI, then publishes API/migration images for Linux AMD64
+to GHCR using the job token. No production secrets enter the builds. Deployment
+should select the recorded image digest, since commit tags can be rebuilt.
+
+The image's recurring health check uses liveness so it does not keep Neon awake;
+local Compose overrides it with database readiness. JWT validation must reject
+unresolved Key Vault reference text even when it exceeds the minimum key length.
+Image publication alone does not complete HTTPS/proxy configuration or runtime
+database grants. Keep Phase 14 in progress until those and deployment are verified.
