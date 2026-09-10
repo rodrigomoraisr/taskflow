@@ -116,7 +116,16 @@ image after checking schema compatibility. B1 has no deployment slot here, so a
 restart can interrupt requests. Concurrency prevents overlapping releases; GitHub
 may replace a pending release with a newer one.
 
-## Remaining guided setup
+## Verified release and operating checks
+
+On 2026-09-09, [release 34399595283](https://github.com/rodrigomoraisr/taskflow/actions/runs/34399595283)
+successfully deployed source revision `806ca7a` through the entire pipeline:
+Release tests, disposable container checks, both image builds, OIDC sign-in,
+migrations and runtime grants, digest rollout, restart, and public health checks.
+Independent requests after the run also returned `Healthy`/HTTP 200 from both
+`/health/live` and `/health/ready`. The earlier release stopped before production
+changes because Azure CLI returns the container's `image` at the top level;
+the deployment now queries that shape rather than the ARM `properties.image` shape.
 
 Proxy diagnosis: the deployed `6f3d07e` image and the three temporary settings
 (`ReverseProxy__Enabled=true`, `ReverseProxy__KnownProxies__0=127.0.0.1`,
@@ -142,7 +151,8 @@ The user confirmed removal of the diagnostic and temporary debug settings.
   Remove `ReverseProxy__Diagnostics` and the temporary HttpOverrides debug setting.
   Never use the automatic
   `ASPNETCORE_FORWARDEDHEADERS_ENABLED`/`DOTNET_FORWARDEDHEADERS_ENABLED` shortcut.
-- Run **Publish containers** on `main` and verify its production deployment job.
+- For future releases, run **Publish containers** on `main` and verify its
+  production deployment job. The initial automated release is verified above.
 - Update the explicit grant script whenever a migration adds a runtime table.
 - Repeat live verification after updates.
 - Use `/health/live` for recurring probes; repeated database readiness probes can
