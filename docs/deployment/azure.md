@@ -1,4 +1,4 @@
-# Azure deployment — Phase 14 in progress
+# Azure deployment — Phase 14 verified
 
 The selected setup is Linux App Service B1 in East US, Neon Free PostgreSQL,
 public GitHub Container Registry images and Azure Key Vault Standard. The monthly

@@ -3,7 +3,9 @@
 Working plan. Kept in the repo so any session — mine, an AI assistant's, or a
 reviewer's — starts from the real state rather than from memory.
 
-**Status:** phase 0 and phases 1-13 complete locally. Phase 14 in progress. Completed phases are committed, pushed and checked in remote CI; LinkedIn posts follow a separate publishing schedule.
+**Status:** phases 0-15 complete locally, including verified production deployment
+and documentation. Phase 16 remains. Milestone commits are pushed and checked in
+remote CI; LinkedIn posts follow a separate publishing schedule.
 
 ---
 
@@ -198,6 +200,11 @@ Phase 14. Local Compose is not the final public production configuration.
 
 CI already exists from phase 0.3. This adds deployment.
 
+**Complete on 2026-09-09.** [Verified release](https://github.com/rodrigomoraisr/taskflow/actions/runs/34399595283)
+passed CI, published both images, authenticated through OIDC, applied migrations
+and runtime grants, deployed by digest and checked live/ready health. Publishing
+a `v*` tag builds images only; manually publishing `main` starts the full release.
+
 - Build and publish a container image on tag.
 - Deploy to Azure App Service B1 with Neon Free, within the R$120/month budget.
   Follow the [deployment runbook](deployment/azure.md). A live URL in the README is worth more than any
@@ -206,6 +213,15 @@ CI already exists from phase 0.3. This adds deployment.
 ## Phase 15 — Documentation & portfolio polish
 
 README exists from phase 0.1; this is the polish pass.
+
+**Complete locally on 2026-09-10:** README reviewer guide and dependency diagram,
+[API walkthrough](API.md), all-controller descriptions/response codes/request
+examples, bearer OpenAPI security and health contracts, complete HTTP collection,
+and an [ADR index](adr/README.md) plus ADR 0009 for tenant context and persistence.
+Generated-document tests cover all 33 controller actions plus two health probes,
+valid example DTOs, response media types and bearer security. The full Release
+suite passed with 538 tests; the final documentation checks also passed after
+refining error examples. Production OpenAPI exposure remains disabled.
 
 - Architecture diagram — one image beats three paragraphs.
 - OpenAPI descriptions and examples on every endpoint.

@@ -6,14 +6,34 @@ A multi-tenant task management API built with .NET 10, PostgreSQL and Clean Arch
 
 Users belong to one or more **workspaces**. A workspace owns projects, projects own
 tasks, and every read and write is scoped to the caller's workspace membership and
-role. Tenant isolation is enforced at the repository boundary rather than trusted to
-the caller — no query reaches the database without a workspace id.
+role. Tenant-owned data is filtered by workspace at the repository boundary.
+Authentication and the caller's workspace listing use account-scoped queries.
 
 This is a portfolio project. It is deliberately over-invested in the parts that are
 usually skipped — domain invariants, authorization, tenant isolation — and
 deliberately under-invested elsewhere. Both are documented below.
 
 ---
+
+## Live API and reviewer guide
+
+The API runs on Azure App Service with Neon PostgreSQL:
+[check liveness](https://taskflow-rodrigo-api-etgcbgg6a0bseybd.eastus-01.azurewebsites.net/health/live).
+Health probes are public; workspace operations require a registered user's access
+token and active membership. Use the local setup below for the guided examples.
+
+- [API walkthrough and conventions](docs/API.md): registration, tokens, workspace,
+  project, task, comments and activity.
+- [Complete HTTP request collection](src/TaskFlow.Api/TaskFlow.Api.http): run requests
+  individually and replace IDs/tokens with your own responses.
+- [Architecture decisions](docs/adr/README.md): constraints, tradeoffs and supporting tests.
+- [Deployment runbook](docs/deployment/azure.md): Key Vault, OIDC, migrations,
+  release controls and recovery.
+
+OpenAPI is available locally in Development at `/openapi/v1.json`, with endpoint
+examples, response codes and bearer authentication metadata. The live deployment
+does not expose that document or a Swagger UI. The health response proves
+availability, not completion of an authenticated business flow.
 
 ## Running it
 
@@ -43,7 +63,8 @@ docker compose down       # Stops the stack; retains database data
 
 Set `API_PORT`/`POSTGRES_PORT` in `.env` if host ports are occupied. Update the HTTP
 collection's host address to `http://localhost:8080` when using Docker. This is a
-local stack; public hosting requires the HTTPS/proxy/secret setup planned in Phase 14.
+local stack; the public deployment uses the verified HTTPS/proxy/secret setup in
+the [Azure runbook](docs/deployment/azure.md).
 See [ADR 0007](docs/adr/0007-container-runtime-and-migrations.md).
 
 **Development with the SDK:** .NET 10 SDK and Docker for PostgreSQL. Use this for
@@ -68,7 +89,7 @@ dotnet run
 OpenAPI is exposed at `/openapi/v1.json` in Development.
 
 ```bash
-# Tests — 536 of them; the integration suite starts a PostgreSQL container,
+# Tests — 538 of them; the integration suite starts a PostgreSQL container,
 # so Docker must be running.
 dotnet test
 
@@ -87,22 +108,21 @@ nothing.
 `TaskFlow.Migrator` is a separate deployment executable referencing Infrastructure;
 it applies migrations without booting the API or requiring a signing key.
 
-```
-TaskFlow.Api             controllers, exception middleware, JWT wiring,
-                         ICurrentUser implementation
-        ↓
-TaskFlow.Application     services, DTOs, authorization services,
-                         repository interfaces, application exceptions
-        ↓
-TaskFlow.Domain          entities with invariants and state transitions,
-                         enums, domain exceptions
-        ↑
-TaskFlow.Infrastructure  EF Core DbContext, entity configurations,
-                         repositories, migrations, JWT generation, BCrypt
+```mermaid
+flowchart LR
+    API[API: HTTP and composition root] --> APP[Application: use cases and interfaces]
+    API --> INFRA[Infrastructure: EF Core and security implementations]
+    APP --> DOMAIN[Domain: entities and invariants]
+    INFRA --> APP
+    INFRA --> DOMAIN
+    MIG[Migration executable] --> INFRA
 ```
 
-`Infrastructure` depends on `Application` (it implements its interfaces) and on
-`Domain`. Nothing depends on `Api`.
+Arrows represent project references, not request flow. `Infrastructure` implements
+Application's interfaces; the API wires implementations through dependency
+injection. Nothing depends on `Api`. A request passes through HTTP middleware,
+service authorization, a repository query and a unit-of-work commit. Domain code
+does not know about HTTP or PostgreSQL.
 
 ### Domain model
 
@@ -199,7 +219,8 @@ recording begins when the feature is deployed. Apply the new EF migration before
 running the updated API. See [ADR 0003](docs/adr/0003-comments-and-task-activity.md)
 for authorization, transaction, retention and append-only guarantees.
 
-Everything except `/auth/*` requires a bearer token.
+Business endpoints under `/api/*` require a bearer token. `/auth/*`, health probes,
+and the development-only OpenAPI document are anonymous.
 
 ---
 
@@ -260,13 +281,13 @@ it down. A client that disconnects should not leave a query running.
 
 ## Tests
 
-536 tests across three projects, mirroring the layers.
+538 tests across three projects, mirroring the layers.
 
 | Project | Count | What it covers |
 | --- | --- | --- |
 | `TaskFlow.Domain.Tests` | 129 | Entity invariants, every status transition, guards on soft-deleted entities — one test per mutating method rather than one representative test |
 | `TaskFlow.Application.Tests` | 147 | Service orchestration with substituted repositories and the **real** authorization services, plus the check-before-load audit |
-| `TaskFlow.Api.IntegrationTests` | 260 | Tenant isolation over real HTTP, repository filters, database constraints, lifecycle journeys, comments/activity, task queries, authentication races/lockouts, signing-key validation, trusted proxy handling, bounded proxy diagnostics, correlated errors, health checks, rate limits and concurrency rollback |
+| `TaskFlow.Api.IntegrationTests` | 262 | Tenant isolation over real HTTP, repository filters, database constraints, lifecycle journeys, comments/activity, task queries, authentication races/lockouts, signing-key validation, trusted proxy handling, bounded proxy diagnostics, correlated errors, health checks, rate limits, concurrency rollback and generated OpenAPI contracts |
 
 The lifecycle journey registers and logs in a user, creates a new workspace,
 project and task, then starts, completes and reopens the task. Each transition
@@ -383,8 +404,9 @@ These are decisions, not omissions.
 
 The working plan is in [`docs/ROADMAP.md`](docs/ROADMAP.md). The immediate queue:
 
-1. Phase 14 (in progress): publish images and deploy to Azure App Service with Neon. See the [deployment runbook](docs/deployment/azure.md).
-2. Phase 15: documentation and portfolio polish.
+Phases 14 and 15 cover the verified Azure deployment and documentation pass.
+Next is **Phase 16: final review and v1.0** — dependency/analyzer audit, a complete
+review, and release notes. Deployment is available now; the v1.0 tag is still pending.
 
 ---
 

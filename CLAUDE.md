@@ -345,9 +345,20 @@ The image's recurring health check uses liveness so it does not keep Neon awake;
 local Compose overrides it with database readiness. JWT validation must reject
 unresolved Key Vault reference text even when it exceeds the minimum key length.
 Image publication alone does not complete HTTPS/proxy configuration or runtime
-database grants. Keep Phase 14 in progress until those and deployment are verified.
+database grants. Phase 14 was verified in production on 2026-09-09; see the runbook
+for the release run and observed proxy configuration.
 
 Read ADR 0008 before changing forwarded-header handling. It is opt-in with explicit
 proxy IPs and one forwarded hop, before redirects and rate limiting. Never enable
 the framework's trust-all environment shortcut or infer trusted proxies from app
 outbound IPs. Production proxy identity/header behavior must be verified separately.
+
+## Phase 15 — API documentation
+
+Controller summaries, descriptions, response metadata and RequestExample attributes
+describe the actual wire contract. Add them with each new endpoint and keep the
+HTTP collection in sync. ApiDocumentation supplies bearer security, body examples
+and health-check metadata. Generated-document tests check completeness and example
+validation. OpenAPI remains Development-only; do not expose it in production as a
+side effect of documentation changes. ADR 0009 records the existing route, repository
+and soft-delete choices; docs/adr/README.md indexes all decisions.

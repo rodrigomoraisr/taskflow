@@ -1,11 +1,18 @@
 @TaskFlow.Api_HostAddress = http://localhost:5056
-# Example-only credentials for local development; never reuse them elsewhere.
+# Local examples only. Start with Register and Login, then copy their response values.
 @email = developer@example.test
 @password = Local-demo-passphrase-2026
 @accessToken = paste-access-token-here
 @refreshToken = paste-current-refresh-token-here
+@workspaceId = 11111111-1111-1111-1111-111111111111
+@projectId = 22222222-2222-2222-2222-222222222222
+@taskId = 44444444-4444-4444-4444-444444444444
+@commentId = 55555555-5555-5555-5555-555555555555
+@userId = 33333333-3333-3333-3333-333333333333
+# These IDs must come from your own responses. Create a second user before adding a member.
+# Run requests individually: deletion examples affect later reads.
 
-### Register
+### Register an account
 POST {{TaskFlow.Api_HostAddress}}/auth/register
 Content-Type: application/json
 
@@ -14,7 +21,7 @@ Content-Type: application/json
   "password": "{{password}}"
 }
 
-### Login: copy token and refreshToken from the response into the variables above
+### Start an authentication session
 POST {{TaskFlow.Api_HostAddress}}/auth/login
 Content-Type: application/json
 
@@ -23,22 +30,7 @@ Content-Type: application/json
   "password": "{{password}}"
 }
 
-### Read workspaces
-GET {{TaskFlow.Api_HostAddress}}/api/workspaces
-Authorization: Bearer {{accessToken}}
-X-Correlation-ID: manual-workspaces-001
-
-### Liveness (no database dependency)
-GET {{TaskFlow.Api_HostAddress}}/health/live
-
-### Readiness (database connectivity)
-GET {{TaskFlow.Api_HostAddress}}/health/ready
-
-### ProblemDetails example (404 with matching correlation header/body)
-GET {{TaskFlow.Api_HostAddress}}/not-a-route
-X-Correlation-ID: manual-error-001
-
-### Rotate: replace BOTH variables with the new response; do not reuse the old refresh token
+### Rotate a refresh token — replace both tokens after success; never reuse the old refresh token
 POST {{TaskFlow.Api_HostAddress}}/auth/refresh
 Content-Type: application/json
 
@@ -46,10 +38,192 @@ Content-Type: application/json
   "refreshToken": "{{refreshToken}}"
 }
 
-### Logout this refresh session (access token remains valid until expiry)
+### Revoke a refresh session
 POST {{TaskFlow.Api_HostAddress}}/auth/logout
 Content-Type: application/json
 
 {
   "refreshToken": "{{refreshToken}}"
 }
+
+### Create a workspace
+POST {{TaskFlow.Api_HostAddress}}/api/workspaces
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Portfolio workspace"
+}
+
+### List my workspaces
+GET {{TaskFlow.Api_HostAddress}}/api/workspaces
+Authorization: Bearer {{accessToken}}
+
+### Get a workspace
+GET {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}
+Authorization: Bearer {{accessToken}}
+
+### Soft-delete a workspace
+DELETE {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}
+Authorization: Bearer {{accessToken}}
+
+### List workspace members
+GET {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}/members
+Authorization: Bearer {{accessToken}}
+
+### Add a workspace member
+POST {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}/members
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "email": "teammate@example.com"
+}
+
+### Change a member role
+PATCH {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}/members/{{userId}}/role
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "role": 3
+}
+
+### Remove a workspace member
+DELETE {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}/members/{{userId}}
+Authorization: Bearer {{accessToken}}
+
+### Create a project
+POST {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}/projects
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "API launch",
+  "description": "Prepare the first release."
+}
+
+### List projects
+GET {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}/projects
+Authorization: Bearer {{accessToken}}
+
+### Get a project
+GET {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}/projects/{{projectId}}
+Authorization: Bearer {{accessToken}}
+
+### Update a project
+PUT {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}/projects/{{projectId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "API launch",
+  "description": "Release preparation",
+  "status": 1
+}
+
+### Soft-delete a project
+DELETE {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}/projects/{{projectId}}
+Authorization: Bearer {{accessToken}}
+
+### Create a task
+POST {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}/tasks
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": "Document the API",
+  "description": "Add endpoint examples",
+  "projectId": "{{projectId}}",
+  "priority": 2,
+  "dueDate": "2026-12-01T12:00:00Z"
+}
+
+### Get a task
+GET {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}/tasks/{{taskId}}
+Authorization: Bearer {{accessToken}}
+
+### Filter and sort tasks
+GET {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}/tasks?page=1&pageSize=20&status=1&sortBy=dueDate&sortDirection=asc
+Authorization: Bearer {{accessToken}}
+
+### Update task details
+PUT {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}/tasks/{{taskId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": "Document the API",
+  "description": "Review examples",
+  "priority": 3,
+  "dueDate": null
+}
+
+### Soft-delete a task
+DELETE {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}/tasks/{{taskId}}
+Authorization: Bearer {{accessToken}}
+
+### Start a task
+POST {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}/tasks/{{taskId}}/start
+Authorization: Bearer {{accessToken}}
+
+### Complete a task
+POST {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}/tasks/{{taskId}}/complete
+Authorization: Bearer {{accessToken}}
+
+### Reopen a task
+POST {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}/tasks/{{taskId}}/reopen
+Authorization: Bearer {{accessToken}}
+
+### Assign a task
+PUT {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}/tasks/{{taskId}}/assignee
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "userId": "{{userId}}"
+}
+
+### Unassign a task
+DELETE {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}/tasks/{{taskId}}/assignee
+Authorization: Bearer {{accessToken}}
+
+### Comment on a task
+POST {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}/tasks/{{taskId}}/comments
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "body": "The endpoint examples are ready for review."
+}
+
+### Get a comment
+GET {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}/tasks/{{taskId}}/comments/{{commentId}}
+Authorization: Bearer {{accessToken}}
+
+### List task comments
+GET {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}/tasks/{{taskId}}/comments?page=1&pageSize=20
+Authorization: Bearer {{accessToken}}
+
+### Edit my comment
+PUT {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}/tasks/{{taskId}}/comments/{{commentId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "body": "The examples have been reviewed."
+}
+
+### Soft-delete my comment
+DELETE {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}/tasks/{{taskId}}/comments/{{commentId}}
+Authorization: Bearer {{accessToken}}
+
+### Read workspace activity
+GET {{TaskFlow.Api_HostAddress}}/api/workspaces/{{workspaceId}}/activity?page=1&pageSize=20
+Authorization: Bearer {{accessToken}}
+
+### Liveness (no database access)
+GET {{TaskFlow.Api_HostAddress}}/health/live
+
+### Readiness (database connectivity)
+GET {{TaskFlow.Api_HostAddress}}/health/ready

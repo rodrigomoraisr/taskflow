@@ -31,7 +31,7 @@ builder.Logging.AddJsonConsole(options => options.IncludeScopes = true);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(TaskFlow.Api.OpenApi.ApiDocumentation.Configure);
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails(options =>
     options.CustomizeProblemDetails = context =>
