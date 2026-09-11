@@ -19,6 +19,7 @@ jobs:
 
   build-and-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     # No postgres service container here on purpose. The integration tests use
     # Testcontainers (see Tests/TaskFlow.Api.IntegrationTests/Infrastructure),
@@ -38,10 +39,10 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore -warnaserror
 
       - name: Build
-        run: dotnet build --no-restore --configuration Release
+        run: dotnet build --no-restore --configuration Release -warnaserror
 
       - name: Test
         run: >-

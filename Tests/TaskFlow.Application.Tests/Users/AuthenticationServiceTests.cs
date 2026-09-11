@@ -91,7 +91,7 @@ public sealed class AuthenticationServiceTests
     private sealed class Context
     {
         public IAuthenticationRepository Store { get; } = Substitute.For<IAuthenticationRepository>();
-        public IAuthTransaction Transaction { get; } = Substitute.For<IAuthTransaction>();
+        public IApplicationTransaction Transaction { get; } = Substitute.For<IApplicationTransaction>();
         public IUserRepository Users { get; } = Substitute.For<IUserRepository>();
         public IPasswordHasher Passwords { get; } = Substitute.For<IPasswordHasher>();
         public IJwtTokenGenerator Jwt { get; } = Substitute.For<IJwtTokenGenerator>();

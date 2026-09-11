@@ -2,11 +2,39 @@ using Microsoft.EntityFrameworkCore;
 using TaskFlow.Application.Workspaces;
 using TaskFlow.Domain.Entities;
 using TaskFlow.Infrastructure.Persistence;
+using TaskFlow.Application.Common.Interfaces;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace TaskFlow.Infrastructure.Repositories;
 
 public class WorkspaceRepository : IWorkspaceRepository
 {
+    public async Task<IApplicationTransaction> BeginMembershipChangeAsync(
+        Guid workspaceId, CancellationToken cancellationToken = default)
+    {
+        var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            // Serialize membership decisions for this workspace, including owner counts.
+            await _dbContext.Workspaces.FromSqlInterpolated(
+                    $"SELECT * FROM \"Workspaces\" WHERE \"Id\" = {workspaceId} FOR UPDATE")
+                .AsNoTracking().SingleOrDefaultAsync(cancellationToken);
+            return new MembershipTransaction(transaction);
+        }
+        catch
+        {
+            await transaction.DisposeAsync();
+            throw;
+        }
+    }
+
+    private sealed class MembershipTransaction(IDbContextTransaction transaction) : IApplicationTransaction
+    {
+        public Task CommitAsync(CancellationToken cancellationToken = default) =>
+            transaction.CommitAsync(cancellationToken);
+        public ValueTask DisposeAsync() => transaction.DisposeAsync();
+    }
+
     private readonly TaskFlowDbContext _dbContext;
 
     public WorkspaceRepository(

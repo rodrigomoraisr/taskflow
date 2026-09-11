@@ -1,9 +1,13 @@
 namespace TaskFlow.Application.Workspaces;
 
 using TaskFlow.Domain.Entities;
+using TaskFlow.Application.Common.Interfaces;
 
 public interface IWorkspaceRepository
 {
+    Task<IApplicationTransaction> BeginMembershipChangeAsync(
+        Guid workspaceId, CancellationToken cancellationToken = default);
+
     Task AddAsync(
         Workspace workspace,
         CancellationToken cancellationToken = default);

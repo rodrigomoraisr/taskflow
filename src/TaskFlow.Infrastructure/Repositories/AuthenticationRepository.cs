@@ -8,7 +8,7 @@ namespace TaskFlow.Infrastructure.Repositories;
 
 public sealed class AuthenticationRepository(TaskFlowDbContext db) : IAuthenticationRepository
 {
-    public async Task<IAuthTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+    public async Task<IApplicationTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
         => new AuthTransaction(await db.Database.BeginTransactionAsync(cancellationToken));
 
     public Task<User?> LockUserByEmailAsync(string email, CancellationToken cancellationToken = default) =>
@@ -32,7 +32,7 @@ public sealed class AuthenticationRepository(TaskFlowDbContext db) : IAuthentica
     public async Task AddTokenAsync(RefreshToken token, CancellationToken cancellationToken = default)
         => await db.RefreshTokens.AddAsync(token, cancellationToken);
 
-    private sealed class AuthTransaction(IDbContextTransaction transaction) : IAuthTransaction
+    private sealed class AuthTransaction(IDbContextTransaction transaction) : IApplicationTransaction
     {
         public Task CommitAsync(CancellationToken cancellationToken = default) => transaction.CommitAsync(cancellationToken);
         public ValueTask DisposeAsync() => transaction.DisposeAsync();

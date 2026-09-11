@@ -3,8 +3,8 @@
 Working plan. Kept in the repo so any session — mine, an AI assistant's, or a
 reviewer's — starts from the real state rather than from memory.
 
-**Status:** phases 0-15 complete locally, including verified production deployment
-and documentation. Phase 16 remains. Milestone commits are pushed and checked in
+**Status:** phases 0-16 implemented, including verified production deployment,
+documentation and the v1.0 final audit. Milestone commits are pushed and checked in
 remote CI; LinkedIn posts follow a separate publishing schedule.
 
 ---
@@ -229,6 +229,14 @@ refining error examples. Production OpenAPI exposure remains disabled.
   route, why soft delete, why repository over `DbContext`.
 
 ## Phase 16 — Final review & v1.0
+
+Implemented on 2026-09-10. The dependency audit reported no known vulnerable
+direct/transitive NuGet packages. Shared warning/analyzer/audit policy now applies
+to local builds, CI and Docker. Final review fixed concurrent owner removals and
+demotions by serializing membership writes and rechecking queued callers' authority.
+All 541 tests and isolated container smoke checks passed locally. Release publication
+is gated by remote CI. See [the audit](FINAL-AUDIT.md), [ADR 0010](adr/0010-membership-write-serialization.md)
+and [v1.0.0 release notes](releases/v1.0.0.md).
 
 - Dependency audit, warnings as errors, analyser pass.
 - Re-read the whole thing as a reviewer would, in one sitting.

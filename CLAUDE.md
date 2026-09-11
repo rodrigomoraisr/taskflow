@@ -293,7 +293,7 @@ SHA-256 hashes of random 256-bit tokens; never log raw credentials.
 
 `AuthenticationService` owns login/refresh/logout; `UserService` owns registration.
 User-row locks protect the five-failure/15-minute lockout counter. Auth persistence
-is account-scoped and intentionally has no workspace ID. `IAuthTransaction` keeps
+is account-scoped and intentionally has no workspace ID. `IApplicationTransaction` keeps
 EF transactions in Infrastructure. Failure counters and replay revocations are
 intentional commits on rejected requests, exceptions to the ordinary no-commit
 rule; tests must verify those changes survive the error response.
@@ -362,3 +362,17 @@ and health-check metadata. Generated-document tests check completeness and examp
 validation. OpenAPI remains Development-only; do not expose it in production as a
 side effect of documentation changes. ADR 0009 records the existing route, repository
 and soft-delete choices; docs/adr/README.md indexes all decisions.
+
+## Phase 16 — Release quality
+
+Directory.Build.props enables .NET 10 analyzers, warnings as errors and NuGet
+auditing of direct/transitive dependencies. Docker copies it before restore.
+Do not suppress audit failures to make a release pass; investigate the advisory
+or unavailable feed. No known advisory is not proof of absence of vulnerabilities.
+
+Read ADR 0010 before changing membership writes. Add/restore, role changes and
+removals acquire the workspace row lock within a transaction, after the first
+authorization gate, and recheck authority after acquiring it. Keep the owner count,
+mutation, SaveChanges and commit inside that transaction. This prevents concurrent
+owner removals/demotions from leaving no owner. The general transaction interface
+is shared with authentication; EF remains in Infrastructure.

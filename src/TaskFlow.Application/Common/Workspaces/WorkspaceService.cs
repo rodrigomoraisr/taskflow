@@ -140,6 +140,8 @@ public class WorkspaceService : IWorkspaceService
             cancellationToken);
 
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        await using var transaction = await _workspaceRepository.BeginMembershipChangeAsync(workspaceId, cancellationToken);
+        await _workspaceAuthorizationService.EnsureCanManageMembersAsync(workspaceId, cancellationToken);
         var user = await _userRepository.GetByEmailAsync(
             normalizedEmail,
             cancellationToken);
@@ -175,6 +177,7 @@ public class WorkspaceService : IWorkspaceService
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        await transaction.CommitAsync(cancellationToken);
         return MapMember(membership, user);
     }
 
@@ -187,15 +190,15 @@ public class WorkspaceService : IWorkspaceService
         if (!Enum.IsDefined(request.Role))
             throw new InvalidWorkspaceRoleException();
 
-        var actorRole = await _workspaceAuthorizationService
-            .EnsureCanManageMembersAsync(workspaceId, cancellationToken);
+        var actorRole = await BeginAuthorizedMembershipChangeAsync(workspaceId, cancellationToken);
+        await using var transaction = actorRole.Transaction;
 
         var membership = await GetActiveMemberAsync(
             workspaceId,
             userId,
             cancellationToken);
 
-        EnsureCanManageTarget(actorRole, membership.Role, request.Role);
+        EnsureCanManageTarget(actorRole.Role, membership.Role, request.Role);
 
         if (membership.Role == WorkspaceRole.Owner &&
             request.Role != WorkspaceRole.Owner)
@@ -207,6 +210,7 @@ public class WorkspaceService : IWorkspaceService
 
         membership.ChangeRole(request.Role);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
     }
 
     public async Task RemoveMemberAsync(
@@ -214,15 +218,15 @@ public class WorkspaceService : IWorkspaceService
         Guid userId,
         CancellationToken cancellationToken = default)
     {
-        var actorRole = await _workspaceAuthorizationService
-            .EnsureCanManageMembersAsync(workspaceId, cancellationToken);
+        var actorRole = await BeginAuthorizedMembershipChangeAsync(workspaceId, cancellationToken);
+        await using var transaction = actorRole.Transaction;
 
         var membership = await GetActiveMemberAsync(
             workspaceId,
             userId,
             cancellationToken);
 
-        EnsureCanManageTarget(actorRole, membership.Role);
+        EnsureCanManageTarget(actorRole.Role, membership.Role);
 
         if (membership.Role == WorkspaceRole.Owner)
         {
@@ -233,6 +237,25 @@ public class WorkspaceService : IWorkspaceService
 
         membership.RemoveFromWorkspace();
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    private async Task<(WorkspaceRole Role, IApplicationTransaction Transaction)> BeginAuthorizedMembershipChangeAsync(
+        Guid workspaceId, CancellationToken cancellationToken)
+    {
+        await _workspaceAuthorizationService.EnsureCanManageMembersAsync(workspaceId, cancellationToken);
+        var transaction = await _workspaceRepository.BeginMembershipChangeAsync(workspaceId, cancellationToken);
+        try
+        {
+            // A queued request must observe permission changes made by the previous writer.
+            var role = await _workspaceAuthorizationService.EnsureCanManageMembersAsync(workspaceId, cancellationToken);
+            return (role, transaction);
+        }
+        catch
+        {
+            await transaction.DisposeAsync();
+            throw;
+        }
     }
 
     private async Task<WorkspaceUser> GetActiveMemberAsync(

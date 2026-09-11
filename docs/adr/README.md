@@ -14,3 +14,4 @@ describe implemented choices and their limitations; they are not promises of fut
 | [0007 — Containers and migrations](0007-container-runtime-and-migrations.md) | Schema changes happen in a separate release command with restricted runtime grants. |
 | [0008 — Trusted proxy headers](0008-trusted-proxy-headers.md) | Only a verified ingress may supply the effective client address and scheme. |
 | [0009 — Tenant context and persistence](0009-tenant-context-and-persistence.md) | Route-based workspace selection, repositories and soft deletion keep boundaries explicit. |
+| [0010 — Membership serialization](0010-membership-write-serialization.md) | Concurrent owner removals/demotions retain an owner and queued writers recheck authority. |

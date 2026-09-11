@@ -89,7 +89,7 @@ dotnet run
 OpenAPI is exposed at `/openapi/v1.json` in Development.
 
 ```bash
-# Tests — 538 of them; the integration suite starts a PostgreSQL container,
+# Tests — 541 of them; the integration suite starts a PostgreSQL container,
 # so Docker must be running.
 dotnet test
 
@@ -281,13 +281,13 @@ it down. A client that disconnects should not leave a query running.
 
 ## Tests
 
-538 tests across three projects, mirroring the layers.
+541 tests across three projects, mirroring the layers.
 
 | Project | Count | What it covers |
 | --- | --- | --- |
 | `TaskFlow.Domain.Tests` | 129 | Entity invariants, every status transition, guards on soft-deleted entities — one test per mutating method rather than one representative test |
 | `TaskFlow.Application.Tests` | 147 | Service orchestration with substituted repositories and the **real** authorization services, plus the check-before-load audit |
-| `TaskFlow.Api.IntegrationTests` | 262 | Tenant isolation over real HTTP, repository filters, database constraints, lifecycle journeys, comments/activity, task queries, authentication races/lockouts, signing-key validation, trusted proxy handling, bounded proxy diagnostics, correlated errors, health checks, rate limits, concurrency rollback and generated OpenAPI contracts |
+| `TaskFlow.Api.IntegrationTests` | 265 | Tenant isolation over real HTTP, repository filters, database constraints, lifecycle journeys, comments/activity, task queries, authentication races/lockouts, signing-key validation, trusted proxy handling, bounded proxy diagnostics, correlated errors, health checks, rate limits, concurrency rollback, concurrent owner changes and generated OpenAPI contracts |
 
 The lifecycle journey registers and logs in a user, creates a new workspace,
 project and task, then starts, completes and reopens the task. Each transition
@@ -400,13 +400,16 @@ These are decisions, not omissions.
 
 ---
 
-## What's next
+## Release status
 
-The working plan is in [`docs/ROADMAP.md`](docs/ROADMAP.md). The immediate queue:
+The sixteen-phase portfolio scope is complete. See the
+[`v1.0.0` release notes](docs/releases/v1.0.0.md),
+[final audit](docs/FINAL-AUDIT.md) and [roadmap](docs/ROADMAP.md).
 
-Phases 14 and 15 cover the verified Azure deployment and documentation pass.
-Next is **Phase 16: final review and v1.0** — dependency/analyzer audit, a complete
-review, and release notes. Deployment is available now; the v1.0 tag is still pending.
+Shared build settings enforce warnings as errors, .NET 10 analyzers and direct/
+transitive NuGet auditing in local, CI and container builds. The final review also
+closed a concurrent last-owner removal/demotion race. Tag publication runs CI and
+publishes images; production rollout remains an explicit workflow run against main.
 
 ---
 

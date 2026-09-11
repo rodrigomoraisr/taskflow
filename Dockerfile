@@ -3,6 +3,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /source
 
 # Restore layers survive changes to source files.
+COPY Directory.Build.props ./
 COPY src/TaskFlow.Domain/TaskFlow.Domain.csproj src/TaskFlow.Domain/
 COPY src/TaskFlow.Application/TaskFlow.Application.csproj src/TaskFlow.Application/
 COPY src/TaskFlow.Infrastructure/TaskFlow.Infrastructure.csproj src/TaskFlow.Infrastructure/

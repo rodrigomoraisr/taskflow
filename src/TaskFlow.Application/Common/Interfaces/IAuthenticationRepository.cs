@@ -5,7 +5,7 @@ namespace TaskFlow.Application.Common.Interfaces;
 // Authentication data is account-scoped, not owned by a workspace.
 public interface IAuthenticationRepository
 {
-    Task<IAuthTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
+    Task<IApplicationTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
     Task<User?> LockUserByEmailAsync(string email, CancellationToken cancellationToken = default);
     Task<Guid?> FindSessionIdAsync(string tokenHash, CancellationToken cancellationToken = default);
     Task<RefreshSession?> LockSessionAsync(Guid id, CancellationToken cancellationToken = default);

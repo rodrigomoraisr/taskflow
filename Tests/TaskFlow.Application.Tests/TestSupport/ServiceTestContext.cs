@@ -259,6 +259,7 @@ public sealed class ServiceTestContext
         Projects.GetByWorkspaceAsync(default, default).ThrowsAsyncForAnyArgs(reached);
 
         Workspaces.GetByIdAsync(default, default).ThrowsAsyncForAnyArgs(reached);
+        Workspaces.BeginMembershipChangeAsync(default, default).ThrowsAsyncForAnyArgs(reached);
         Workspaces.GetByIdsAsync(default!, default).ThrowsAsyncForAnyArgs(reached);
 
         Users.GetByEmailAsync(default!, default).ThrowsAsyncForAnyArgs(reached);
